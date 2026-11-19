@@ -506,7 +506,16 @@ const SubParser = (() => {
         .replace(/&lt;/gi, '<')
         .replace(/&gt;/gi, '>')
         .replace(/&quot;/gi, '"')
+        .replace(/&apos;/gi, "'")
         .replace(/&#39;/gi, "'")
+        .replace(/&#(\d+);/g, (_, value) => {
+          const codePoint = Number(value);
+          return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : _;
+        })
+        .replace(/&#x([\da-f]+);/gi, (_, value) => {
+          const codePoint = parseInt(value, 16);
+          return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : _;
+        })
         .replace(/[ \t]+/g, ' ')
         .replace(/ +\n/g, '\n')
         .replace(/\n[ \t]*\n+/g, '\n')
