@@ -1290,7 +1290,9 @@ const Translator = (() => {
       if (proxyResult) {
         return proxyResult;
       }
-    } catch {}
+    } catch {
+      throwIfAborted(signal);
+    }
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       throwIfAborted(signal);
@@ -1305,26 +1307,36 @@ const Translator = (() => {
             }
             try {
               result = await fetchGoogleT(text, srcLang, tgtLang, signal, attempt);
-            } catch {}
+            } catch {
+              throwIfAborted(signal);
+            }
             if (!result) throw googleErr;
           }
         } else if (attempt === 3) {
           try {
             result = await fetchGoogleT(text, srcLang, tgtLang, signal, attempt);
           } catch {
-            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, attempt + 1); } catch {}
+            throwIfAborted(signal);
+            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, attempt + 1); } catch {
+              throwIfAborted(signal);
+            }
           }
         } else if (attempt === 4) {
           try {
             result = await fetchLingva(text, srcLang, tgtLang, signal, attempt);
           } catch {
-            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, attempt + 1); } catch {}
+            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, attempt + 1); } catch {
+              throwIfAborted(signal);
+            }
           }
         } else {
           try {
             result = await fetchMyMemory(text, srcLang, tgtLang, signal);
           } catch {
-            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, 0); } catch {}
+            throwIfAborted(signal);
+            try { result = await fetchGoogle(text, srcLang, tgtLang, signal, 0); } catch {
+              throwIfAborted(signal);
+            }
           }
         }
 
