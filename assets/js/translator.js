@@ -1185,7 +1185,18 @@ const Translator = (() => {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&nbsp;/g, ' ')
-      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec));
+      .replace(/&#(\d+);/g, (_, dec) => {
+        const codePoint = Number(dec);
+        return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10FFFF &&
+          !(codePoint >= 0xD800 && codePoint <= 0xDFFF)
+          ? String.fromCodePoint(codePoint) : '\\uFFFD';
+      })
+      .replace(/&#x([\\da-f]+);/gi, (_, hex) => {
+        const codePoint = parseInt(hex, 16);
+        return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10FFFF &&
+          !(codePoint >= 0xD800 && codePoint <= 0xDFFF)
+          ? String.fromCodePoint(codePoint) : '\\uFFFD';
+      });
   }
 
   async function fetchGoogle(text, srcLang, tgtLang, signal, attempt = 0) {
