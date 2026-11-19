@@ -72,11 +72,16 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => Promise.all(ASSETS.map((asset) =>
-        cache.add(new Request(asset, { cache: 'reload' })).catch((err) => {
-          console.warn('SW pre-cache skipped asset:', asset, err && err.message);
-        })
-      )))
+      .then((cache) => Promise.all(ASSETS.map((asset) => {
+        const request = new Request(asset, { cache: 'reload' });
+        return cache.add(request).catch((err) => {
+          if (["./","./index.html","./manifest.json","./assets/css/variables.css","./assets/css/base.css","./assets/css/components.css","./assets/js/parser.js","./assets/js/translator.js","./assets/js/app.js"].includes(asset)) {
+            console.error('SW critical pre-cache failed:', asset, err && err.message);
+            throw err;
+          }
+          console.warn('SW optional pre-cache skipped asset:', asset, err && err.message);
+        });
+      })))
       .then(() => self.skipWaiting())
   );
 });
