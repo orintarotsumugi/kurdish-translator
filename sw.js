@@ -9,6 +9,15 @@
 const CACHE = 'kurdish-translator-v176';
 const SHARED_CACHE = 'kurdish-shared-file';
 
+const CRITICAL_ASSETS = new Set([
+  './', './index.html', './manifest.json',
+  './assets/css/variables.css', './assets/css/base.css',
+  './assets/css/components.css', './assets/css/translation.css',
+  './assets/js/i18n.js', './assets/js/parser.js',
+  './assets/js/translator-dict.js', './assets/js/translator-orthography.js',
+  './assets/js/translator.js', './assets/js/app.js',
+]);
+
 const ASSETS = [
   './',
   './index.html',
@@ -75,7 +84,7 @@ self.addEventListener('install', (event) => {
       .then((cache) => Promise.all(ASSETS.map((asset) => {
         const request = new Request(asset, { cache: 'reload' });
         return cache.add(request).catch((err) => {
-          if (["./","./index.html","./manifest.json","./assets/css/variables.css","./assets/css/base.css","./assets/css/components.css","./assets/js/parser.js","./assets/js/translator.js","./assets/js/app.js"].includes(asset)) {
+          if (CRITICAL_ASSETS.has(asset)) {
             console.error('SW critical pre-cache failed:', asset, err && err.message);
             throw err;
           }
