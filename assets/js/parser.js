@@ -510,11 +510,15 @@ const SubParser = (() => {
         .replace(/&#39;/gi, "'")
         .replace(/&#(\d+);/g, (_, value) => {
           const codePoint = Number(value);
-          return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : _;
+          return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10FFFF &&
+            !(codePoint >= 0xD800 && codePoint <= 0xDFFF)
+            ? String.fromCodePoint(codePoint) : '\\uFFFD';
         })
         .replace(/&#x([\da-f]+);/gi, (_, value) => {
           const codePoint = parseInt(value, 16);
-          return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : _;
+          return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10FFFF &&
+            !(codePoint >= 0xD800 && codePoint <= 0xDFFF)
+            ? String.fromCodePoint(codePoint) : '\\uFFFD';
         })
         .replace(/[ \t]+/g, ' ')
         .replace(/ +\n/g, '\n')
