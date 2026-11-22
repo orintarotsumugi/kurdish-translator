@@ -7,6 +7,31 @@ const AppQuality = (() => {
   let lastQualityIssues = [];
   let currentQualityFilter = 'all';
   let currentQualityQuery = '';
+  let lastFocusedElement = null;
+  let qualityFilterTimer = null;
+  const KURDISH_RE = /[\u0600-\u06FF]/;
+  const ISSUE_LABELS = {
+    cps_too_fast: ['qIssueCps', 'Reading speed'],
+    arabic_letters: ['qIssueArabic', 'Arabic letters'],
+    split_prefixes: ['qIssuePrefix', 'Split prefix'],
+    long_line: ['qIssueLong', 'Long line'],
+  };
+
+  /** Polish only the Kurdish lines, so an included English source line is
+   *  never given Kurdish punctuation or digit conversion. */
+  function polishCueText(text, kurdishDigits) {
+    if (!text) return text;
+    if (typeof Translator === 'undefined' || !Translator.postprocessSorani) return text;
+    return String(text).split('\n').map((line) => (
+      KURDISH_RE.test(line) ? Translator.postprocessSorani(line, { kurdishDigits }) : line
+    )).join('\n');
+  }
+
+  function issueLabel(code) {
+    const entry = ISSUE_LABELS[code];
+    if (!entry) return null;
+    return getI18nText(entry[0], entry[1]);
+  }
 
   function getElements() {
     return {
@@ -51,18 +76,26 @@ const AppQuality = (() => {
   function openQualityModal() {
     const els = getElements();
     if (!els.qualityModalBackdrop) return;
+    lastFocusedElement = document.activeElement;
     runQualityInspection();
     els.qualityModalBackdrop.classList.remove('hidden');
     if (els.qualitySearchInput) {
       els.qualitySearchInput.value = '';
       currentQualityQuery = '';
+      if (els.qualitySearchClear) els.qualitySearchClear.classList.add('hidden');
+      setTimeout(() => els.qualitySearchInput.focus(), 120);
     }
+    renderQualityIssuesList(lastQualityIssues);
   }
 
   function closeQualityModal() {
     const els = getElements();
     if (els.qualityModalBackdrop) {
       els.qualityModalBackdrop.classList.add('hidden');
+    }
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
     }
   }
 
@@ -94,7 +127,7 @@ const AppQuality = (() => {
 
     cues.forEach((cue, index) => {
       const origCue = origCues ? origCues[index] : null;
-      const srcText = origCue ? origCue.text : cue.text;
+      const srcText = cue.origText || (origCue ? origCue.text : cue.text);
       const kurdText = cue.text || '';
 
       const res = (typeof Translator !== 'undefined' && Translator.checkLineQuality)
@@ -200,14 +233,16 @@ const AppQuality = (() => {
     const isCkb = getUiLang() === 'ckb';
 
     if (!listToRender.length) {
+      const allGoodTitle = getI18nText('qAllGoodTitle', 'All lines look great!');
+      const allGoodDesc = getI18nText('qAllGoodDesc', 'No punctuation anomalies, raw Arabic glyphs, or dialogue overlaps detected.');
       els.qualityIssuesList.innerHTML = `<div class="char-empty-msg" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted);">
         <div style="margin-bottom: 0.75rem; color: #10b981;">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         </div>
         <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.25rem;">
-          ${isCkb ? 'هەموو دێڕەکان بێ کێشەن و ستانداردن!' : 'All Lines Look Great!'}
+          ${escapeHtml(allGoodTitle)}
         </div>
-        <div>${isCkb ? 'هیچ کێشەیەکی ڕێزمانی، پیت، یان تێکەڵبوونی کات نەدۆزرایەوە.' : 'No punctuation anomalies, raw Arabic glyphs, or dialogue overlaps detected.'}</div>
+        <div>${escapeHtml(allGoodDesc)}</div>
       </div>`;
       return;
     }
@@ -244,11 +279,14 @@ const AppQuality = (() => {
 
       const timeFmt = (typeof SubParser !== 'undefined') ? `${SubParser.fmtSRT(item.start)} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px; margin: 0 3px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> ${SubParser.fmtSRT(item.end)}` : '';
 
+      // `issues` holds machine codes (cps_too_fast, …) mixed with human
+      // overlap messages. Show localized labels instead of raw snake_case.
       let tagsHtml = item.issues.map((iss) => {
+        const label = issueLabel(iss) || (/^[a-z0-9_]+$/i.test(iss) ? iss.replace(/_/g, ' ') : iss);
         let tagClass = 'quality-issue-tag';
         if (/overlap|timing|تێکەڵبوونی/i.test(iss)) tagClass += ' warning';
-        else if (/character|name|ناو/i.test(iss)) tagClass += ' info';
-        return `<span class="${tagClass}">${escapeHtml(iss)}</span>`;
+        else if (/character|name|ناو|arabic/i.test(iss)) tagClass += ' info';
+        return `<span class="${tagClass}">${escapeHtml(label)}</span>`;
       }).join('');
 
       if (item.advancedAlternatives && item.advancedAlternatives.length > 0) {
@@ -297,11 +335,11 @@ const AppQuality = (() => {
         </div>
         <div class="quality-texts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.85rem;">
           <div style="padding: 0.6rem; background: var(--surface-secondary, rgba(255,255,255,0.03)); border-radius: 6px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-muted, #94a3b8); word-break: break-word;">
-            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem; letter-spacing: 0.5px;">Original</div>
+            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem; letter-spacing: 0.5px;">${escapeHtml(getI18nText('qOriginal', 'Original'))}</div>
             <div style="line-height: 1.4;">${escapeHtml(item.srcText)}</div>
           </div>
           <div style="padding: 0.6rem; background: var(--bg-surface, rgba(0,0,0,0.25)); border-radius: 6px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); word-break: break-word;" dir="rtl">
-            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem; color: var(--text-muted, #94a3b8); letter-spacing: 0.5px;" dir="ltr">Kurdish Sorani</div>
+            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem; color: var(--text-muted, #94a3b8); letter-spacing: 0.5px;" dir="ltr">${escapeHtml(getI18nText('qKurdish', 'Kurdish Sorani'))}</div>
             <div class="kurd-val-text" style="font-family: 'Noto Naskh Arabic', 'Vazirmatn', sans-serif; font-size: 14px; line-height: 1.5; color: var(--text-primary, #f8fafc);">${escapeHtml(item.kurdText)}</div>
           </div>
         </div>
@@ -313,7 +351,7 @@ const AppQuality = (() => {
 
     if (visibleCount === 0) {
       els.qualityIssuesList.innerHTML = `<div class="char-empty-msg" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted);">
-        ${isCkb ? 'هیچ ئەنجامێک نەدۆزرایەوە بۆ ئەم فلتەرە.' : 'No issues found matching current filter/search.'}
+        ${escapeHtml(getI18nText('qNoMatch', 'No issues found matching the current filter or search.'))}
       </div>`;
       return;
     }
@@ -342,9 +380,7 @@ const AppQuality = (() => {
           const cues = typeof appBridge.getWorkCues === 'function' ? appBridge.getWorkCues() : [];
           if (cues && cues[cIdx]) {
             const kurdDigitsVal = els.kurdishDigitsToggle ? els.kurdishDigitsToggle.checked : false;
-            const polished = (typeof Translator !== 'undefined' && Translator.postprocessSorani)
-              ? Translator.postprocessSorani(cues[cIdx].text, { kurdishDigits: kurdDigitsVal })
-              : cues[cIdx].text;
+            const polished = polishCueText(cues[cIdx].text, kurdDigitsVal);
             if (typeof appBridge.applyCueEdit === 'function') {
               appBridge.applyCueEdit(cIdx, polished);
             }
@@ -404,13 +440,9 @@ const AppQuality = (() => {
 
     const kurdDigitsVal = els.kurdishDigitsToggle ? els.kurdishDigitsToggle.checked : false;
 
-    // 1. Polish all Kurdish text
-    const updatedCues = cues.map((c) => {
-      const pol = (typeof Translator !== 'undefined' && Translator.postprocessSorani)
-        ? Translator.postprocessSorani(c.text, { kurdishDigits: kurdDigitsVal })
-        : c.text;
-      return { ...c, text: pol };
-    });
+    // 1. Polish the Kurdish text only; English source lines (and untranslated
+    //    cues) must keep their ASCII punctuation and digits.
+    const updatedCues = cues.map((c) => ({ ...c, text: polishCueText(c.text, kurdDigitsVal) }));
 
     // 2. Fix overlaps
     let finalCues = updatedCues;
@@ -482,8 +514,12 @@ const AppQuality = (() => {
     if (els.qualityCategoryTabs) {
       els.qualityCategoryTabs.querySelectorAll('.quality-tab').forEach((tab) => {
         tab.addEventListener('click', () => {
-          els.qualityCategoryTabs.querySelectorAll('.quality-tab').forEach((t) => t.classList.remove('active'));
+          els.qualityCategoryTabs.querySelectorAll('.quality-tab').forEach((t) => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
           tab.classList.add('active');
+          tab.setAttribute('aria-selected', 'true');
           currentQualityFilter = tab.dataset.filter || 'all';
           renderQualityIssuesList(lastQualityIssues);
         });
@@ -491,7 +527,11 @@ const AppQuality = (() => {
     }
 
     if (els.qualitySearchInput) {
-      els.qualitySearchInput.addEventListener('input', () => filterQualityList());
+      // Rebuilding every issue card per keystroke was janky on long files.
+      els.qualitySearchInput.addEventListener('input', () => {
+        clearTimeout(qualityFilterTimer);
+        qualityFilterTimer = setTimeout(filterQualityList, 120);
+      });
     }
 
     if (els.qualitySearchClear) {

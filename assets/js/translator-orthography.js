@@ -30,9 +30,15 @@ const TranslatorOrthography = (() => {
   function normalizeDigits(str, useKurdishDigits) {
     if (!str) return '';
     if (!useKurdishDigits) {
-      return str
-        .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-        .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+      // Protect markup and ASS override blocks in both directions, otherwise
+      // converting a line to ASCII digits also rewrites timestamps like
+      // {\pos(١٢٠,٤٠)} or <font size="٢">.
+      return str.replace(/(<[^>]*>|\{[^}]*\})|([\u0660-\u0669\u06f0-\u06f9]+)/g, (m, tag, nums) => {
+        if (tag) return tag;
+        return nums
+          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+          .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+      });
     }
     return str.replace(/(<[^>]*>|\{[^}]*\}|\[\s*T\s*[\d\u0660-\u0669\u06f0-\u06f9]+\s*\])|([0-9\u06f0-\u06f9]+)/gi, (m, tag, nums) => {
       if (tag) return tag;
@@ -745,6 +751,10 @@ const TranslatorOrthography = (() => {
     if (!text) return '';
     let s = text.replace(/[\u200E\u200F\u202A-\u202E]/g, '');
 
+    // Machine output sometimes keeps Arabic harakat, Quranic marks or a
+    // tatweel. None of them belong in a Sorani subtitle line.
+    s = s.replace(/\u0640/g, '').replace(/[\u064B-\u0652\u0670\u06D6-\u06ED]/g, '');
+
     s = normalizeSoraniAlphabet(s);
     s = rejoinVerbalAffixes(s);
     s = applyContextualGrammar(s);
@@ -752,15 +762,26 @@ const TranslatorOrthography = (() => {
     s = normalizeDigits(s, useKurdishDigits);
 
     if (cleanPunctuation) {
+      // Typographic ellipsis + the Urdu full stop some engines emit.
+      s = s.replace(/\.{3,}/g, '…').replace(/\u06D4/g, '.');
+
+      // A comma between digits is a thousands separator (1,000), not a
+      // clause break, so protect it before converting clause commas.
+      s = s.replace(/(\d),(\d)/g, '$1\u0000$2');
       s = s.replace(/,/g, '،')
            .replace(/;/g, '؛')
-           .replace(/\?/g, '؟')
-           .replace(/[ \t]+([،؛?.!])/g, '$1')
-           .replace(/\n\s*([،؛?.!])/g, '$1')
+           .replace(/\?/g, '؟');
+      s = s.replace(/\u0000/g, ',');
+
+      s = s.replace(/[ \t]+([،؛؟!.…»])/g, '$1')
+           .replace(/\n\s*([،؛؟!.…])/g, '$1')
+           .replace(/«[ \t]+/g, '«')
            .replace(/([،؛])\s*([،؛])/g, '$1')
            .replace(/([،؛])\s*([.؟!])/g, '$2')
            .replace(/(?<!\.)\.[ \t]*([؟!])/g, '$1')
-           .replace(/([،؛؟])([^\s\n،؛?.!0-9\u0660-\u0669])/g, '$1 $2')
+           .replace(/([،؛؟!…])([^\s\n،؛؟!.…0-9\u0660-\u0669»)\]}])/g, '$1 $2')
+           .replace(/(^|\s)و[ \t]+و(?=\s|$)/g, '$1و')
+           .replace(/([\u0600-\u06FF])\.([\u0600-\u06FF])/g, '$1. $2')
            .replace(/[ \t]{2,}/g, ' ')
            .trim();
     }
@@ -911,7 +932,18 @@ const TranslatorOrthography = (() => {
    */
   function checkLineQuality(cue, originalText) {
     if (!cue) return { score: 100, issues: [], suggestions: [], issueDetails: [], alternatives: [], improvedText: '' };
-    const text = typeof cue === 'string' ? cue : (cue.text || '');
+    let text = typeof cue === 'string' ? cue : (cue.text || '');
+    // When "Include original text" is on the cue is "source\ntranslation".
+    // Analyse only the Kurdish half so the English line doesn't inflate CPS
+    // and long-line warnings.
+    if (typeof cue === 'object' && cue && cue.origText) {
+      const orig = String(cue.origText).replace(/\\N/g, '\n').trim();
+      const plain = text.replace(/\\N/g, '\n');
+      if (orig && plain.trim().startsWith(orig)) {
+        const rest = plain.slice(plain.indexOf(orig) + orig.length).trim();
+        if (rest) text = rest;
+      }
+    }
     const hasTiming = typeof cue === 'object' && typeof cue.start === 'number' && typeof cue.end === 'number' && cue.end > cue.start;
     const duration = hasTiming ? Math.max(0.2, (cue.end - cue.start) / 1000) : 0;
     const charCount = text.replace(/<[^>]*>|\{[^}]*\}/g, '').trim().length;

@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0d12" />
-  <meta name="description" content="Free subtitle translator into Kurdish Sorani — SRT, VTT, ASS, SSA, SUB, SMI. Drag & drop, works on mobile, installable & offline." />
+  <meta name="theme-color" content="#141218" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Free subtitle translator into Kurdish Sorani — SRT, VTT, ASS, SSA, SUB, SMI, SBV, LRC and TXT. Drag & drop, works on mobile, installable & offline." />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Kurdî Subs" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
@@ -58,6 +59,7 @@
   <link rel="stylesheet" href="assets/css/editor.css" />
   <link rel="stylesheet" href="assets/css/fullscreen.css" />
   <link rel="stylesheet" href="assets/css/toast.css" />
+  <link rel="stylesheet" href="assets/css/ui.css" />
   <link rel="stylesheet" href="assets/video-editor/video-editor.css" />
   <link rel="stylesheet" href="assets/video-editor/video-editor-exporter.css" />
   <link rel="stylesheet" href="assets/video-editor/video-editor-panels.css" />
@@ -65,7 +67,7 @@
   <link rel="stylesheet" href="assets/video-editor/video-editor-mobile.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="app">
@@ -256,7 +258,7 @@
             <line x1="2" y1="12" x2="22" y2="12"></line>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
           </svg>
-          <span class="lang-opt en active">English</span>
+          <span class="lang-opt en active">EN</span>
           <span class="lang-sep">/</span>
           <span class="lang-opt ckb">کوردی</span>
         </button>
@@ -268,7 +270,7 @@
           </svg>
           <span data-i18n="tourGuide">Guide</span>
         </button>
-        <button class="gh-btn" id="installBtn" hidden>
+        <button class="gh-btn" id="installBtn" hidden aria-label="Install app" title="Install app / دابەزاندنی بەرنامە">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
@@ -277,7 +279,7 @@
           <span data-i18n="install">Install</span>
         </button>
 
-        <a class="gh-btn" href="https://github.com/LOST-4EVER/kurdish-translator" target="_blank" rel="noopener">
+        <a class="gh-btn" href="https://github.com/LOST-4EVER/kurdish-translator" target="_blank" rel="noopener" aria-label="GitHub repository" title="GitHub repository">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
           </svg>
@@ -298,7 +300,7 @@
         <div class="update-text-group">
           <div>
             <strong data-i18n="updateAvailable">A new version is available!</strong>
-            <span class="banner-ver-tag" id="bannerVerTag">v177</span>
+            <span class="banner-ver-tag" id="bannerVerTag">v178</span>
           </div>
           <span data-i18n="updateAvailableSub" id="bannerSubText">Update now to get the latest version and features.</span>
         </div>
@@ -331,7 +333,7 @@
 
     <!-- Tab navigation -->
     <nav class="tabs" id="tabs" role="tablist" aria-label="Application sections">
-      <button class="tab active" data-tab="translate" role="tab" aria-selected="true">
+      <button class="tab active" data-tab="translate" id="tabBtnTranslate" role="tab" aria-selected="true" aria-controls="tabTranslate">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -343,7 +345,7 @@
         </span>
         <span data-i18n="tabTranslate">Translate</span>
       </button>
-      <button class="tab" data-tab="preview" id="previewTab" role="tab" aria-selected="false">
+      <button class="tab" data-tab="preview" id="previewTab" role="tab" aria-selected="false" aria-controls="tabPreview">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -354,7 +356,7 @@
         </span>
         <span data-i18n="tabPreview">Preview</span>
       </button>
-      <button class="tab" data-tab="video-editor" id="videoEditorTab" role="tab" aria-selected="false">
+      <button class="tab" data-tab="video-editor" id="videoEditorTab" role="tab" aria-selected="false" aria-controls="tabVideoEditor">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
@@ -373,7 +375,7 @@
 
     <main class="stage">
       <!-- ============ TRANSLATE TAB ============ -->
-      <div id="tabTranslate">
+      <div id="tabTranslate" role="tabpanel" aria-labelledby="tabBtnTranslate">
 
         <!-- STEP 1 : upload -->
         <section class="card upload-card" id="stepUpload">
@@ -587,7 +589,7 @@
               <span id="progressPct">0%</span>
             </div>
           </div>
-          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-track" id="progressTrack" role="progressbar" aria-label="Translation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progressFill"></div></div>
           <div class="progress-meta">
             <span id="progressDetail" data-i18n="progressPrep">Preparing…</span>
             <span id="lineCount"></span>
@@ -679,7 +681,7 @@
             </button>
             <button class="btn-secondary" id="openVideoStudioDoneBtn" style="border-color: rgba(234, 179, 8, 0.4); color: #fef08a;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              <span>Edit &amp; Burn Video</span>
+              <span data-i18n="btnBurn">Edit &amp; Burn Video</span>
             </button>
             <button class="btn-secondary" id="copyBtn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
@@ -696,7 +698,7 @@
       </div>
 
       <!-- ============ PREVIEW TAB ============ -->
-      <div id="tabPreview" class="hidden">
+      <div id="tabPreview" class="hidden" role="tabpanel" aria-labelledby="previewTab">
         <section class="card player-card">
           <div class="player">
             <div class="screen" id="playerScreen" title="Click to play / pause">
@@ -962,7 +964,7 @@
       </div>
 
       <!-- ============ VIDEO STUDIO TAB (DECOUPLED MODULAR WORKSTATION) ============ -->
-      <div id="tabVideoEditor" class="hidden vn-studio-root"></div>
+      <div id="tabVideoEditor" class="hidden vn-studio-root" role="tabpanel" aria-labelledby="videoEditorTab"></div>
     </main>
 
     <footer class="footer">
@@ -980,7 +982,7 @@
             <div class="refresh-menu-header">
               <div class="header-status-badge">
                 <span class="live-dot online" id="refreshLiveDot" title="Network status"></span>
-                <span class="menu-ver-tag" id="currentVerTag">v177</span>
+                <span class="menu-ver-tag" id="currentVerTag">v178</span>
               </div>
               <div class="header-status-meta">
                 <span class="menu-status-txt" id="refreshStatusTxt" data-i18n="appUpToDate">App up to date</span>
@@ -1057,10 +1059,12 @@
               </button>
               <div class="changelog-panel hidden" id="changelogPanel">
                 <div class="changelog-badge-row">
-                  <span class="changelog-ver">Release v177</span>
+                  <span class="changelog-ver">Release v178</span>
                   <span class="changelog-date">2026</span>
                 </div>
                 <ul class="changelog-list">
+                  <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="9" y1="18" x2="15" y2="18"></line></svg><strong>Mobile-First UI &amp; UX:</strong> thumb-reach bottom navigation, bottom-sheet dialogs, safe-area aware layout, no input zoom on iOS, and larger touch targets across the player and editor.</li>
+                  <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg><strong>Kurdish Quality Pass:</strong> truer subtitle phrases, harakat/tatweel cleanup, thousands separators preserved, and quality checks that ignore the included English source line.</li>
                   <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg><strong>Full GitHub Sync &amp; Auto-Update:</strong> Multi-tier GitHub commit pulling, real-time repository tracking, atomic cache purging, and one-click instant update.</li>
                   <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg><strong>Video Subtitle Studio Pro:</strong> Timeline scrubbing with virtualized 60fps ruler, chronological cue index sorting, and full video player synchronization.</li>
                   <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg><strong>Kurdish Sorani Orthography Precision:</strong> Accurate Heavy R (ڕ) and Velarized L (ڵ) stem detection, safe prefix attachment, and naturalized punctuation.</li>
@@ -1241,10 +1245,10 @@
             </span>
             <div>
               <h3 class="modal-title" id="qualityModalTitle" data-i18n="edQualityCheck">Line-by-Line Kurdish Quality Check</h3>
-              <p class="modal-sub" id="qualityModalSub">Orthography, dialogue collision check &amp; advanced vocabulary</p>
+              <p class="modal-sub" id="qualityModalSub" data-i18n="qModalSub">Orthography, dialogue collision check &amp; advanced vocabulary</p>
             </div>
           </div>
-          <button type="button" class="modal-close-btn" id="closeQualityModalBtn" aria-label="Close">
+          <button type="button" class="modal-close-btn" id="closeQualityModalBtn" aria-label="Close" data-i18n-aria="close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
@@ -1253,42 +1257,42 @@
           <div class="quality-summary-card">
             <div class="quality-score-ring">
               <span class="quality-score-val" id="qualityScoreVal">100%</span>
-              <span class="quality-score-lbl">Kurdish Accuracy</span>
+              <span class="quality-score-lbl" data-i18n="qAccuracyLabel">Kurdish Accuracy</span>
             </div>
             <div class="quality-stats">
               <div class="quality-stat-item">
                 <span class="stat-num" id="qualityIssuesCount">0</span>
-                <span class="stat-lbl">Lines with suggestions</span>
+                <span class="stat-lbl" data-i18n="qStatSuggestions">Lines with suggestions</span>
               </div>
               <div class="quality-stat-item">
                 <span class="stat-num" id="qualityOverlapCount">0</span>
-                <span class="stat-lbl">Dialogue overlaps found</span>
+                <span class="stat-lbl" data-i18n="qStatOverlaps">Dialogue overlaps found</span>
               </div>
               <div class="quality-stat-item">
                 <span class="stat-num" id="qualityAdvancedCount">0</span>
-                <span class="stat-lbl">Advanced idioms found</span>
+                <span class="stat-lbl" data-i18n="qStatIdioms">Advanced idioms found</span>
               </div>
             </div>
           </div>
 
           <div class="quality-actions-bar">
-            <button type="button" class="btn-primary" id="fixAllQualityBtn" data-i18n="btnFixAllIssues"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-2px; margin-right:5px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-Polish &amp; Fix Kurdish</span></button>
-            <button type="button" class="btn-secondary" id="fixOverlapsNowBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px; margin-right:5px;"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg><span>Fix Dialogue Overlaps</span></button>
+            <button type="button" class="btn-primary" id="fixAllQualityBtn" data-i18n="qPolishBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-2px; margin-right:5px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Auto-Polish &amp; Fix Kurdish</span></button>
+            <button type="button" class="btn-secondary" id="fixOverlapsNowBtn" data-i18n="qFixOverlapsBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-2px; margin-right:5px;"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg><span>Fix Dialogue Overlaps</span></button>
           </div>
 
           <!-- Quality Modal Filter Tabs & Search -->
           <div class="quality-filter-bar">
             <div class="quality-tabs" role="tablist" id="qualityCategoryTabs">
-              <button type="button" class="quality-tab active" data-filter="all" role="tab">All (<span id="qTabAllCount">0</span>)</button>
-              <button type="button" class="quality-tab" data-filter="orthography" role="tab">Orthography (<span id="qTabOrthoCount">0</span>)</button>
-              <button type="button" class="quality-tab" data-filter="prefix" role="tab">Prefixes (<span id="qTabPrefixCount">0</span>)</button>
-              <button type="button" class="quality-tab" data-filter="timing" role="tab">Timing &amp; Overlaps (<span id="qTabTimingCount">0</span>)</button>
-              <button type="button" class="quality-tab" data-filter="idioms" role="tab">Idioms (<span id="qTabIdiomsCount">0</span>)</button>
+              <button type="button" class="quality-tab active" data-filter="all" role="tab" aria-selected="true"><span data-i18n="qTabAll">All</span> (<span id="qTabAllCount">0</span>)</button>
+              <button type="button" class="quality-tab" data-filter="orthography" role="tab" aria-selected="false"><span data-i18n="qTabOrthography">Orthography</span> (<span id="qTabOrthoCount">0</span>)</button>
+              <button type="button" class="quality-tab" data-filter="prefix" role="tab" aria-selected="false"><span data-i18n="qTabPrefixes">Prefixes</span> (<span id="qTabPrefixCount">0</span>)</button>
+              <button type="button" class="quality-tab" data-filter="timing" role="tab" aria-selected="false"><span data-i18n="qTabTiming">Timing &amp; Overlaps</span> (<span id="qTabTimingCount">0</span>)</button>
+              <button type="button" class="quality-tab" data-filter="idioms" role="tab" aria-selected="false"><span data-i18n="qTabIdioms">Idioms</span> (<span id="qTabIdiomsCount">0</span>)</button>
             </div>
             <div class="quality-search-wrap">
               <svg class="quality-search-ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="qualitySearchInput" class="quality-search-input" placeholder="Filter issues..." aria-label="Filter quality issues" />
-              <button type="button" class="quality-search-clear hidden" id="qualitySearchClear" aria-label="Clear filter"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+              <input type="text" id="qualitySearchInput" class="quality-search-input" placeholder="Filter issues..." aria-label="Filter quality issues" data-i18n-placeholder="qFilterIssues" data-i18n-aria="qFilterAria" />
+              <button type="button" class="quality-search-clear hidden" id="qualitySearchClear" aria-label="Clear filter" data-i18n-aria="qClearFilterAria"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
           </div>
 

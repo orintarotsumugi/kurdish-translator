@@ -65,7 +65,7 @@
     qualityIssuesList: '#qualityIssuesList',
     exportFormatSel: '#exportFormatSel', langToggleBtn: '#langToggleBtn',
     translateBtn: '#translateBtn',
-    progressFill: '#progressFill', progressPct: '#progressPct', progressSpeed: '#progressSpeed',
+    progressTrack: '#progressTrack', progressFill: '#progressFill', progressPct: '#progressPct', progressSpeed: '#progressSpeed',
     progressDetail: '#progressDetail', lineCount: '#lineCount', cancelBtn: '#cancelBtn',
     liveCaption: '#liveCaption', liveOrigCaption: '#liveOrigCaption', liveTimecode: '#liveTimecode',
     livePlaceholder: '#livePlaceholder', liveFeed: '#liveFeed',
@@ -126,6 +126,39 @@
 
   let currentUiLang = 'en';
 
+  function uiText(key, fallback) {
+    const dict = dicts[currentUiLang] || dicts.en;
+    if (dict && dict[key]) return dict[key];
+    if (typeof UI_I18N !== 'undefined' && UI_I18N.getText) {
+      const value = UI_I18N.getText(key, fallback);
+      if (value) return value;
+    }
+    return fallback;
+  }
+
+  /** Set translated copy without wiping a leading icon (the old code used
+   *  textContent, which deleted the SVG inside every labelled button). */
+  function setI18nContent(el, text) {
+    const kids = Array.from(el.children);
+    const icon = kids.find((kid) => kid.tagName.toLowerCase() === 'svg'
+      || kid.classList.contains('tab-ic')
+      || kid.classList.contains('modal-title-icon'));
+    if (icon) {
+      const label = [...kids].reverse().find((kid) => kid !== icon);
+      if (label) {
+        label.textContent = text;
+        return;
+      }
+      // Label is a bare text node next to the icon; replace only that node.
+      Array.from(el.childNodes).forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) node.remove();
+      });
+      el.appendChild(document.createTextNode(text));
+      return;
+    }
+    el.textContent = text;
+  }
+
   function isUserFileLoaded() {
     if (!file) return false;
     if (typeof AppTour !== 'undefined' && AppTour.isDemoActive && AppTour.isDemoActive()) {
@@ -165,7 +198,7 @@
       $$('[data-i18n]').forEach((el) => {
         const key = el.dataset.i18n;
         if (dict[key]) {
-          el.textContent = dict[key];
+          setI18nContent(el, dict[key]);
         }
       });
 
@@ -182,20 +215,26 @@
           el.title = dict[key];
         }
       });
+
+      $$('[data-i18n-aria]').forEach((el) => {
+        const key = el.dataset.i18nAria;
+        if (dict[key]) {
+          el.setAttribute('aria-label', dict[key]);
+        }
+      });
     }
 
     updateTourTriggerBtnState();
     // data-i18n rewrote #editorStatus with the static "synced" string, and the
     // editor rows bake their pill labels at build time, so refresh both.
     updateStatus();
+    updateDetectionSummary();
     if (workCues && workCues.length) buildEditor();
 
     if (typeof AppTour !== 'undefined' && AppTour.refresh) {
       AppTour.refresh();
     }
-    if (typeof AppQuality !== 'undefined' && AppQuality.runInspection) {
-      AppQuality.runInspection();
-    }
+    scheduleQualityInspection();
     if (typeof AppVersion !== 'undefined' && AppVersion.refreshTexts) {
       AppVersion.refreshTexts();
     }
@@ -281,6 +320,10 @@
     const pct = Math.round(fraction * 100);
     if (els.progressFill) els.progressFill.style.width = pct + '%';
     if (els.progressPct) els.progressPct.textContent = pct + '%';
+    if (els.progressTrack) {
+      els.progressTrack.setAttribute('aria-valuenow', String(pct));
+      if (detail) els.progressTrack.setAttribute('aria-valuetext', detail);
+    }
     if (detail && els.progressDetail) els.progressDetail.textContent = detail;
   }
 
@@ -337,6 +380,7 @@
    *  building a very large file stays O(n) instead of rescanning everything,
    *  and sparse source files (with empty/blank cues) still map correctly. */
   let cachedLiveTexts = null;
+  let renderedFeedKey = '';
   function renderLive(results, doneCount) {
     const upto = Math.min(doneCount || 0, liveOrder.length);
     if (cachedLiveTexts === null) cachedLiveTexts = new Array(results.length).fill(null);
@@ -383,10 +427,13 @@
       }
     }
 
-    // Render Stream Feed Cards
+    // Render Stream Feed Cards (skip rebuilding when the window is unchanged)
     if (els.liveFeed) {
-      els.liveFeed.innerHTML = '';
       const recentIndices = liveItems.slice(-6);
+      const feedKey = recentIndices.map((i) => `${i}:${results[i] || ''}`).join('|');
+      if (feedKey === renderedFeedKey) return;
+      renderedFeedKey = feedKey;
+      els.liveFeed.innerHTML = '';
       const frag = document.createDocumentFragment();
 
       recentIndices.forEach((i) => {
@@ -610,8 +657,8 @@
 
     if (typeof Toast !== 'undefined') {
       Toast.success(
-        currentUiLang === 'ckb' ? 'دەستکارییەکان پاشەکەوت کران!' : 'Edits saved successfully!',
-        currentUiLang === 'ckb' ? 'هەموو گۆڕانکارییەکان بۆ ژێرنووسەکە جێگیر کران.' : 'All subtitle modifications have been permanently applied.'
+        uiText('edSavedTitle', 'Edits saved successfully!'),
+        uiText('edSavedSub', 'All subtitle modifications have been permanently applied.')
       );
     }
   }
@@ -695,7 +742,7 @@
       lastCommittedState = JSON.stringify(workCues);
       updateUndoRedoUI();
       checkEditsState();
-      prepareDownload();
+      prepareDownloadSoon();
     }, 400);
 
     checkEditsState();
@@ -726,18 +773,51 @@
   function updateStatus() {
     if (!els.editorStatus) return;
     const saveEditsChecked = els.saveEditsToggle ? els.saveEditsToggle.checked : true;
-    els.editorStatus.textContent = dirty
-      ? (saveEditsChecked ? 'Your edits will appear in the download' : 'Edits appear here only — not in the download')
-      : 'Synced with the preview — edits apply live';
+    const key = dirty
+      ? (saveEditsChecked ? 'edStatusDirty' : 'edStatusNoSave')
+      : 'edStatusSynced';
+    els.editorStatus.textContent = uiText(key, saveEditsChecked
+      ? 'Your edits will appear in the download'
+      : 'Edits appear here only — not in the download');
   }
 
   // ---------- Line-by-Line Detection & Inspector Engine ----------
   const STRIP_TAGS_RE = /<[^>]+>|\{[^}]*\}/g;
-  const UNTRANSLATED_ENG_RE = /\b[a-zA-Z]{3,}\b/;
+  const ENGLISH_WORD_RE = /[a-zA-Z]{3,}/g;
+  const ENGLISH_KEEP_RE = /^(?:TV|OK|DVD|CD|USB|GPS|FBI|CIA|DNA|AI|ID|PDF|URL|VIP|CEO|CFO|CTO|Mr|Mrs|Ms|Dr|St|vs|etc|PC|RAM|CPU|GPU|HQ|HD|UHD|SMS|PIN|ATM|CCTV|PM|AM|DJ|MC|Jr|Sr|NASA|FBI|NSA|KGB|MI6|UK|USA|EU|UN|WHO|NBA|NFL|UFC|WWE|MCU|DC|RPG|FPS|DLC|AI|AR|VR|IT|HR|PR|DIY|FAQ|ASAP|FYI|BTW|OMG|LOL|OK)$/i;
   const ARABIC_LETTERS_RE = /[\u0643\u064A\u0649\u0629]/;
+  const INSPECT_CACHE = new WeakMap();
+
+  function hasUntranslatedEnglish(clean) {
+    const words = clean.match(ENGLISH_WORD_RE);
+    if (!words) return false;
+    for (let i = 0; i < words.length; i++) {
+      if (!ENGLISH_KEEP_RE.test(words[i])) return true;
+    }
+    return false;
+  }
 
   function inspectCue(cue, textOverride) {
-    const text = textOverride !== undefined ? textOverride : (cue.text || '');
+    if (!cue || typeof cue !== 'object') return computeCueInspection(cue, textOverride);
+    if (textOverride !== undefined) return computeCueInspection(cue, textOverride);
+    const key = `${cue.text || ''}\u0000${cue.start || 0}\u0000${cue.end || 0}\u0000${cue.origText || ''}`;
+    const cached = INSPECT_CACHE.get(cue);
+    if (cached && cached.key === key) return cached.value;
+    const value = computeCueInspection(cue);
+    INSPECT_CACHE.set(cue, { key, value });
+    return value;
+  }
+
+  function computeCueInspection(cue, textOverride) {
+    let text = textOverride !== undefined ? textOverride : ((cue && cue.text) || '');
+    if (textOverride === undefined && cue && cue.origText) {
+      const orig = String(cue.origText).replace(/\\N/g, '\n').trim();
+      const plain = text.replace(/\\N/g, '\n');
+      if (orig && plain.trim().startsWith(orig)) {
+        const rest = plain.slice(plain.indexOf(orig) + orig.length).trim();
+        if (rest) text = rest;
+      }
+    }
     const clean = text.replace(STRIP_TAGS_RE, '').trim();
     const duration = Math.max(0.1, ((cue.end || 0) - (cue.start || 0)) / 1000);
     const chars = clean.length;
@@ -751,7 +831,7 @@
     const isTooShort = duration < 0.6;
     const isTooLong = duration > 8.0;
     const isLongLine = maxLineLen > 42;
-    const hasUntranslated = UNTRANSLATED_ENG_RE.test(clean);
+    const hasUntranslated = hasUntranslatedEnglish(clean);
     const hasArabicLetters = ARABIC_LETTERS_RE.test(clean);
     const isDialogue = lines.some((l) => l.trim().startsWith('- ') || l.trim().startsWith('– ')) || clean.includes('\n- ');
     const hasWarning = isFast || isTooShort || isTooLong || isLongLine || hasUntranslated || hasArabicLetters;
@@ -984,7 +1064,7 @@
       input.value = displayText(c.text);
       input.rows = Math.min(6, Math.max(1, (input.value.match(/\n/g) || []).length + 1));
       input.setAttribute('dir', dirFor(input.value));
-      input.setAttribute('aria-label', `Cue ${i + 1} text`);
+      input.setAttribute('aria-label', `${uiText('cueAria', 'Subtitle line text')} ${i + 1}`);
       inputs[i] = input;
       body.appendChild(input);
 
@@ -1129,8 +1209,14 @@
         if (!row) return;
         if (i === cueIdx) {
           row.classList.add('search-current-match');
-          if (scroll) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (scroll && els.editorList) {
+            // scrollIntoView also scrolls the page, which threw the mobile
+            // viewport around while typing in the search field.
+            const list = els.editorList;
+            list.scrollTo({
+              top: Math.max(0, row.offsetTop - (list.clientHeight - row.offsetHeight) / 2),
+              behavior: 'smooth',
+            });
           }
         } else {
           row.classList.remove('search-current-match');
@@ -1322,6 +1408,23 @@
     prepareDownload();
   }
 
+  /** Clear search + category filter so a newly loaded file is never hidden. */
+  function resetEditorFilters() {
+    activeCategoryFilter = 'all';
+    searchMatchIndices = [];
+    currentSearchMatchPos = -1;
+    if (els.edSearchInput) els.edSearchInput.value = '';
+    if (els.edSearchClearBtn) els.edSearchClearBtn.classList.add('hidden');
+    if (els.edSearchCount) els.edSearchCount.classList.add('hidden');
+    if (els.edSearchNav) els.edSearchNav.classList.add('hidden');
+    [els.edFilterAll, els.edFilterWarnings, els.edFilterUntrans, els.edFilterDialogue].forEach((chip) => {
+      if (!chip) return;
+      const match = chip.dataset.filter === 'all';
+      chip.classList.toggle('active', match);
+      chip.setAttribute('aria-selected', match ? 'true' : 'false');
+    });
+  }
+
   /** Swap in a fresh cue set (original or translated) and rebuild everything. */
   function updateCues(cues) {
     baseCues = cues.map((c) => ({ ...c }));
@@ -1340,13 +1443,16 @@
     updateUndoRedoUI();
     dirty = false;
     activeIdx = -1;
+    lastActiveRow = null;
     if (fsActive) exitFs();
     if (els.previewTab) els.previewTab.classList.remove('disabled');
+    resetEditorFilters();
     loadPreview(workCues);
     buildEditor();
     prepareDownload();
     updateStatus();
-    runQualityInspection();
+    checkEditsState();
+    scheduleQualityInspection();
     if (!window._isSyncingFromStudio && typeof window._onAppAllCuesChanged === 'function') {
       window._onAppAllCuesChanged(workCues);
     }
@@ -1423,6 +1529,33 @@
     }
   }
   tabButtons.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  // Arrow-key navigation, expected of a role="tablist" widget.
+  const tabsNav = $('#tabs');
+  if (tabsNav) {
+    tabsNav.addEventListener('keydown', (e) => {
+      if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+      const enabled = Array.from(tabButtons).filter((b) => !b.classList.contains('disabled') && !b.hidden);
+      if (!enabled.length) return;
+      e.preventDefault();
+      const current = enabled.indexOf(document.activeElement);
+      let next;
+      if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = enabled.length - 1;
+      else if (e.key === 'ArrowRight') next = current < 0 ? 0 : (current + 1) % enabled.length;
+      else next = current < 0 ? enabled.length - 1 : (current - 1 + enabled.length) % enabled.length;
+      enabled[next].focus();
+      switchTab(enabled[next].dataset.tab);
+    });
+  }
+
+  // Honour the PWA shortcuts (#preview, #studio) and browser back/forward.
+  function applyHashRoute() {
+    const hash = (location.hash || '').replace(/^#/, '').toLowerCase();
+    if (hash === 'studio' || hash === 'video-editor') switchTab('video-editor');
+    else if (hash === 'preview' && parsed) switchTab('preview');
+  }
+  window.addEventListener('hashchange', applyHashRoute);
   if (els.openVideoStudioCtaBtn) {
     els.openVideoStudioCtaBtn.addEventListener('click', () => switchTab('video-editor'));
   }
@@ -1507,6 +1640,15 @@
         currentUiLang === 'ckb' ? 'تکایە فایلی .SRT, .VTT, .ASS, .SSA, .SUB, .SMI, .SBV, .LRC یان .TXT هەڵبژێرە.' : 'Use .SRT, .VTT, .ASS, .SSA, .SUB, .SMI, .SBV, .LRC or .TXT'
       );
       return;
+    }
+
+    // Loading a new file mid-translation used to let the old run finish and
+    // overwrite the freshly parsed cues. Cancel it before parsing.
+    if (activeController) {
+      cancelFlag = true;
+      try { activeController.abort(); } catch {}
+      activeController = null;
+      if (els.translateBtn) els.translateBtn.disabled = false;
     }
 
     let text;
@@ -1608,12 +1750,15 @@
   // ---------- Translation ----------
   async function startTranslation() {
     if (!parsed) return;
+    if (activeController) return; // a run is already in flight
     cancelFlag = false;
     showStep('progress');
     if (els.cancelBtn && els.cancelBtn.classList) els.cancelBtn.classList.remove('hidden');
     if (els.translateBtn) els.translateBtn.disabled = true;
-    setProgress(0, 'Preparing…');
-    if (els.lineCount) els.lineCount.textContent = `${parsed.cues.length} lines`;
+    setProgress(0, uiText('progressPreparing', 'Preparing…'));
+    if (els.lineCount) {
+      els.lineCount.textContent = uiText('linesUnit', '{n} lines').replace('{n}', String(parsed.cues.length));
+    }
 
     if (typeof Toast !== 'undefined') {
       Toast.show(
@@ -1640,13 +1785,17 @@
         const tr = translated[i] && translated[i].trim() ? translated[i].trim() : null;
         const orig = c.origText || (isAss ? c.text.replace(/\\N/g, '\n') : c.text);
         // Compare against the normalized source so ASS \N cues match correctly.
-        if (includeOriginal && tr && tr !== normalize(c)) return { ...c, origText: orig, text: `${c.text}\n${tr}` };
-        return { ...c, origText: orig, text: tr || c.text };
+        const hasTranslation = !!tr;
+        if (includeOriginal && tr && tr !== normalize(c)) return { ...c, origText: orig, text: `${c.text}\n${tr}`, _translated: hasTranslation };
+        return { ...c, origText: orig, text: tr || c.text, _translated: hasTranslation };
       });
       const keepOnlyChecked = els.keepOnly ? els.keepOnly.checked : false;
+      // "Keep translated only" must look at whether a translation exists —
+      // checking the stacked text kept every line when "include original" was on.
       const finalCues = keepOnlyChecked
-        ? translatedCues.filter((c) => c.text.trim() !== '')
+        ? translatedCues.filter((c) => c._translated)
         : translatedCues;
+      finalCues.forEach((c) => { delete c._translated; });
       finalCues.forEach((c, i) => { c.index = i + 1; });
       return finalCues;
     };
@@ -1669,37 +1818,43 @@
       liveDone = 0;
       liveItems = [];
       cachedLiveTexts = null;
+      renderedFeedKey = '';
       if (els.liveCaption && els.liveCaption.classList) els.liveCaption.classList.add('hidden');
       if (els.liveOrigCaption && els.liveOrigCaption.classList) els.liveOrigCaption.classList.add('hidden');
       if (els.livePlaceholder && els.livePlaceholder.classList) els.livePlaceholder.classList.remove('hidden');
       if (els.liveTimecode) els.liveTimecode.textContent = '00:00.000';
-      if (els.progressSpeed) els.progressSpeed.textContent = 'Processing…';
+      if (els.progressSpeed) els.progressSpeed.textContent = uiText('progressProcessing', 'Processing…');
       if (els.liveFeed) els.liveFeed.innerHTML = '';
 
       const startMs = Date.now();
       const contextAware = els.contextAwareToggle ? els.contextAwareToggle.checked : true;
       const translated = await Translator.translateLines(lines, srcLang, tgtLang, (p, done, total) => {
-        if (cancelFlag) return;
+        if (controller.signal.aborted) return;
         const elapsedSec = (Date.now() - startMs) / 1000;
         const speed = elapsedSec > 0.3 && done > 0 ? Math.round(done / elapsedSec) : 0;
         const remainingSec = speed > 0 ? Math.ceil((total - done) / speed) : 0;
 
         if (els.progressSpeed) {
           if (speed > 0) {
-            els.progressSpeed.textContent = `${speed} lines/sec • ~${remainingSec}s left`;
+            els.progressSpeed.textContent = uiText('progressSpeed', '{n} lines/sec • ~{s}s left')
+              .replace('{n}', String(speed)).replace('{s}', String(remainingSec));
           } else {
-            els.progressSpeed.textContent = `Streaming…`;
+            els.progressSpeed.textContent = uiText('progressStreaming', 'Streaming…');
           }
         }
-        if (els.lineCount) els.lineCount.textContent = `${done} / ${total} lines`;
-        setProgress(p, `Translated ${done} / ${total} lines`);
+        if (els.lineCount) {
+          els.lineCount.textContent = uiText('progressCount', '{done} / {total} lines')
+            .replace('{done}', String(done)).replace('{total}', String(total));
+        }
+        setProgress(p, uiText('progressTranslatedLines', 'Translated {done} / {total} lines')
+          .replace('{done}', String(done)).replace('{total}', String(total)));
       }, controller.signal, {
         accuracy,
         kurdishDigits,
         contextAware,
-        onBatch: (results, done) => { if (!cancelFlag) renderLive(results, done); }
+        onBatch: (results, done) => { if (!controller.signal.aborted) renderLive(results, done); }
       });
-      if (cancelFlag) return; // cancelled mid-run: discard results, stay on settings
+      if (controller.signal.aborted) return; // cancelled mid-run: discard results
 
       const finalCues = finalizeCues(applyTranslation(translated));
       const failedLineCount = Number(translated && translated.failedCount) || 0;
@@ -1720,23 +1875,26 @@
         toast(
           currentUiLang === 'ckb' ? 'بەشێک لە دێڕەکان وەرنەگێڕدران' : 'Some lines were left untranslated',
           false,
-          currentUiLang === 'ckb'
-            ? `${failedLineCount} دێڕ نەتوانرا وەربگێڕدرێت و وەک خۆی مایەوە.`
-            : `${failedLineCount} line(s) could not be translated and were kept as the original text.`,
+          uiText('partialBody', '{n} line(s) could not be translated and were kept as the original text.')
+            .replace('{n}', String(failedLineCount)),
           { type: 'warning' }
         );
       }
     } catch (err) {
-      if (cancelFlag) return; // aborted by the user, already handled
+      // Per-run signal, not the shared cancelFlag: a new run resets that flag,
+      // which used to let an aborted old run report failure over the new one.
+      if (controller.signal.aborted) return;
       console.error(err);
       if (err && err.partial && err.results) {
         // Some lines failed but we have results — show them with a warning.
         updateCues(finalizeCues(applyTranslation(err.results)));
         showStep('done');
+        const partialCount = Number(err.failedCount) || Number(err.results && err.results.failedCount) || 0;
         toast(
           currentUiLang === 'ckb' ? 'بەشێک لە دێڕەکان وەرنەگێڕدران' : 'Partial translation complete',
           true,
-          `${err.failedCount} line(s) couldn't be translated and were kept as original.`
+          uiText('partialBody', '{n} line(s) could not be translated and were kept as the original text.')
+            .replace('{n}', String(partialCount))
         );
         return;
       }
@@ -1751,8 +1909,12 @@
       );
       showStep('settings');
     } finally {
-      activeController = null;
-      els.translateBtn.disabled = false;
+      // Only the run that still owns the controller may clear it; an aborted
+      // previous run must not unlock or detach a newer translation.
+      if (activeController === controller) {
+        activeController = null;
+        els.translateBtn.disabled = false;
+      }
     }
   }
 
@@ -1764,7 +1926,17 @@
     return name || 'subtitle';
   }
 
+  /** Serialising a large subtitle + rebuilding a Blob on every keystroke is
+   *  expensive; edits coalesce and the download click always forces a fresh
+   *  render, so the live path can wait a little longer. */
+  let prepareDownloadTimer = null;
+  function prepareDownloadSoon() {
+    clearTimeout(prepareDownloadTimer);
+    prepareDownloadTimer = setTimeout(prepareDownload, 900);
+  }
+
   function prepareDownload() {
+    clearTimeout(prepareDownloadTimer);
     if (!parsed || !file) return;
     // Edits are included in the output unless "Save edits" has been explicitly disabled.
     let cues = (els.saveEditsToggle && !els.saveEditsToggle.checked) ? baseCues : workCues;
@@ -1845,6 +2017,38 @@
 
   function runQualityInspection() {
     if (typeof AppQuality !== 'undefined') AppQuality.runInspection();
+  }
+
+  let qualityInspectionTimer = null;
+  function scheduleQualityInspection() {
+    clearTimeout(qualityInspectionTimer);
+    qualityInspectionTimer = setTimeout(() => {
+      if (typeof AppQuality !== 'undefined') AppQuality.runInspection();
+    }, 350);
+  }
+
+  /** Apply an auto-polish pass without destroying the user's undo history. */
+  function applyBulkCueTexts(updatedCues) {
+    if (!Array.isArray(updatedCues) || !updatedCues.length) return;
+    recordPreEditSnapshot();
+    workCues = updatedCues.map((c) => {
+      const copy = { ...c };
+      copy._normText = (typeof Translator !== 'undefined' && Translator.normalizeForSearch)
+        ? Translator.normalizeForSearch(copy.text || '')
+        : (copy.text || '').toLowerCase();
+      return copy;
+    });
+    // Auto-polish is a real edit: it stays "unsaved" relative to baseCues, yet
+    // becomes the history baseline so the next keystroke can still be undone.
+    lastCommittedState = JSON.stringify(workCues);
+    dirty = true;
+    updateUndoRedoUI();
+    restoreCuesState();
+    checkEditsState();
+    scheduleQualityInspection();
+    if (!window._isSyncingFromStudio && typeof window._onAppAllCuesChanged === 'function') {
+      window._onAppAllCuesChanged(workCues);
+    }
   }
 
   function fixAllQuality() {
@@ -2548,8 +2752,8 @@
       AppQuality.init({
         getWorkCues: () => workCues || [],
         getOriginalCues: () => (parsed && parsed.cues) || [],
-        setWorkCues: (updatedCues) => updateCues(updatedCues),
-        applyQualityFixes: (updatedCues) => updateCues(updatedCues),
+        setWorkCues: (updatedCues) => applyBulkCueTexts(updatedCues),
+        applyQualityFixes: (updatedCues) => applyBulkCueTexts(updatedCues),
         updateCues: (updatedCues) => updateCues(updatedCues),
         applyCueEdit: (idx, text) => applyCueEdit(idx, text),
         scrollToCue: (idx) => {
@@ -2704,10 +2908,19 @@
 
     initPWA();
 
-    // Warm the translation endpoint so the first real request isn't a cold one
-    // (Google sometimes throttles the first hit and answers on a warm retry).
-    if (typeof Translator !== 'undefined' && Translator.warmup) {
-      Translator.warmup();
+    // Warm the translation endpoint after the page is interactive, and skip it
+    // on metered/slow connections where the extra request only costs data.
+    const warmTranslator = () => {
+      if (typeof Translator !== 'undefined' && Translator.warmup) Translator.warmup();
+    };
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const metered = connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ''));
+    if (!metered) {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(warmTranslator, { timeout: 6000 });
+      } else {
+        setTimeout(warmTranslator, 3500);
+      }
     }
 
     if (els.srcLang) els.srcLang.value = store.get('srcLang', 'auto');
@@ -2744,6 +2957,7 @@
     applyLanguage(savedLang);
 
     buildEditor();
+    applyHashRoute();
 
     // Expose Bridge APIs for Video Studio and External Modules
     window._getAppWorkCues = () => (workCues && workCues.length ? workCues : (parsed && parsed.cues ? parsed.cues : null));
@@ -2772,7 +2986,7 @@
       resizeTimer = setTimeout(() => {
         if (els.editorList) {
           const inputs = els.editorList.querySelectorAll('.ed-input');
-          inputs.forEach((input) => autoGrow(input));
+          if (inputs.length <= 300) inputs.forEach((input) => autoGrow(input));
         }
         if (fsActive) fitFsText();
       }, 100);

@@ -64,21 +64,21 @@
   --red: #f2b8b5;
   --red-soft: rgba(242, 184, 181, 0.12);
 
-  /* Material 3 Shape Tokens - Ultra-crisp, precision squarer architecture */
+  /* Material 3 Shape Tokens - soft, friendly modern surfaces */
   --md-shape-corner-none: 0px;
-  --md-shape-corner-extra-small: 0px;
-  --md-shape-corner-small: 2px;
-  --md-shape-corner-medium: 2px;
-  --md-shape-corner-large: 2px;
-  --md-shape-corner-extra-large: 3px;
-  --md-shape-corner-full: 2px;
+  --md-shape-corner-extra-small: 4px;
+  --md-shape-corner-small: 8px;
+  --md-shape-corner-medium: 10px;
+  --md-shape-corner-large: 14px;
+  --md-shape-corner-extra-large: 18px;
+  --md-shape-corner-full: 999px;
 
   /* Compatibility radius tokens */
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 3px;
-  --radius-full: 2px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 999px;
 
   /* Material 3 Elevations */
   --md-elevation-1: 0 1px 3px 1px rgba(0, 0, 0, 0.25), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -104,6 +104,14 @@
   --font-kurdish: "Vazirmatn", "Noto Sans Arabic", "Noto Naskh Arabic", "Rabar", "Unikurd Web", "Rudaw", "Peshrow", "Segoe UI", Tahoma, sans-serif;
   --font-subtitle: "Vazirmatn", "Noto Sans Arabic", "Noto Naskh Arabic", "Rabar", "Unikurd Web", "Rudaw", "Peshrow", -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Mobile ergonomics */
+  --tap-min: 44px;
+  --nav-height: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 *, *::before, *::after {

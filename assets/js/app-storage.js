@@ -34,21 +34,42 @@ const AppStorage = (() => {
     }
   }
 
+  // These are the exact keys app.js persists. The reader used to look for
+  // "opt_*" keys that nothing ever wrote, so loadOptions() always returned the
+  // defaults; the legacy opt_* spelling is still accepted for old installs.
+  const OPTION_KEYS = {
+    includeOriginal: 'includeOriginal',
+    accuracyToggle: 'accuracy',
+    keepOnly: 'keepOnly',
+    kurdishDigitsToggle: 'kurdishDigits',
+    contextAwareToggle: 'contextAware',
+    fixOverlapToggle: 'fix_overlap',
+    addBomToggle: 'addBom',
+    crlfToggle: 'useCrlf',
+  };
+
+  function readOption(name, fallback) {
+    const key = OPTION_KEYS[name] || name;
+    const value = get(key, null);
+    if (value !== null) return value;
+    return get('opt_' + name, fallback);
+  }
+
   function loadOptions() {
     return {
-      includeOriginal: get('opt_includeOriginal', '0') === '1',
-      accuracyToggle: get('opt_accuracyToggle', '0') === '1',
-      keepOnly: get('opt_keepOnly', '0') === '1',
-      kurdishDigitsToggle: get('opt_kurdishDigitsToggle', '0') === '1',
-      contextAwareToggle: get('opt_contextAwareToggle', '1') !== '0',
-      fixOverlapToggle: get('opt_fixOverlapToggle', '0') === '1',
-      addBomToggle: get('opt_addBomToggle', '0') === '1',
-      crlfToggle: get('opt_crlfToggle', '0') === '1',
+      includeOriginal: readOption('includeOriginal', '0') === '1',
+      accuracyToggle: readOption('accuracyToggle', '0') === '1',
+      keepOnly: readOption('keepOnly', '0') === '1',
+      kurdishDigitsToggle: readOption('kurdishDigitsToggle', '0') === '1',
+      contextAwareToggle: readOption('contextAwareToggle', '1') !== '0',
+      fixOverlapToggle: readOption('fixOverlapToggle', '0') === '1',
+      addBomToggle: readOption('addBomToggle', '0') === '1',
+      crlfToggle: readOption('crlfToggle', '0') === '1',
     };
   }
 
   function saveOption(key, val) {
-    set('opt_' + key, val ? '1' : '0');
+    set(OPTION_KEYS[key] || key, val ? '1' : '0');
   }
 
   return {
@@ -57,6 +78,7 @@ const AppStorage = (() => {
     loadOptions,
     saveOption,
     DEFAULT_OPTIONS,
+    OPTION_KEYS,
   };
 })();
 

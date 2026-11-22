@@ -78,22 +78,37 @@ const AppDecoder = (() => {
       }
     }
 
-    // Default UTF-8 with fatal fallback for Kurdish / Arabic Windows-1256
+    // Default UTF-8 with a legacy fallback. Blindly choosing Windows-1256
+    // turned every Western-European legacy subtitle into Arabic gibberish, so
+    // decode both legacy pages and keep the one that actually looks like text.
     try {
       return new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^\uFEFF/, '');
     } catch (e) {
-      try {
-        return new TextDecoder('windows-1256').decode(bytes).replace(/^\uFEFF/, '');
-      } catch (e2) {
-        return new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/, '');
-      }
+      return decodeLegacy(bytes);
     }
+  }
+
+  function decodeLegacy(bytes) {
+    let arabic = '';
+    let western = '';
+    try { arabic = new TextDecoder('windows-1256').decode(bytes).replace(/^\uFEFF/, ''); } catch (e) {}
+    try { western = new TextDecoder('windows-1252').decode(bytes).replace(/^\uFEFF/, ''); } catch (e) {}
+    if (!arabic) return western || '';
+    if (!western) return arabic;
+
+    const arabicLetters = (arabic.match(/[\u0600-\u06FF]/g) || []).length;
+    const arabicLatin = (arabic.match(/[A-Za-z]/g) || []).length;
+    const sampleLength = Math.max(1, arabicLetters + arabicLatin);
+    // A Kurdish/Arabic file decoded as 1256 is mostly Arabic script; a French
+    // or Spanish file decoded as 1256 is a wall of unrelated Arabic letters.
+    return (arabicLetters / sampleLength) >= 0.35 ? arabic : western;
   }
 
   return {
     readTextFile,
     readFileAsText: readTextFile,
     decodeBytes,
+    decodeLegacy,
   };
 })();
 

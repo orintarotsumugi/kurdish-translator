@@ -47,6 +47,12 @@ const Translator = (() => {
   const TRANSLATION_CACHE = new Map();
   const MAX_CACHE_SIZE = 3000;
 
+  // The digit style is part of the output, so it must be part of the key:
+  // otherwise toggling Kurdish digits kept serving the previous style from cache.
+  function makeTranslationCacheKey(srcLang, tgtLang, raw, useKurdishDigits) {
+    return `${srcLang}:${tgtLang}:${useKurdishDigits ? 'kd' : 'ad'}:${(raw || '').trim()}`;
+  }
+
   function setTranslationCache(k, val) {
     if (!k) return;
     if (TRANSLATION_CACHE.size >= MAX_CACHE_SIZE) {
@@ -865,7 +871,7 @@ const Translator = (() => {
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i];
       if (!raw || !raw.trim()) continue;
-      const cleanKey = `${srcLang}:${tgtLang}:${raw.trim()}`;
+      const cleanKey = makeTranslationCacheKey(srcLang, tgtLang, raw, useKurdishDigits);
       if (tgtLang === 'ckb') {
         const matched = lookupLexicon(raw);
         if (matched) {
@@ -916,7 +922,7 @@ const Translator = (() => {
             results[item.index] = norm;
 
             if (item.raw && item.raw.trim()) {
-              const k = `${srcLang}:${tgtLang}:${item.raw.trim()}`;
+              const k = makeTranslationCacheKey(srcLang, tgtLang, item.raw, useKurdishDigits);
               setTranslationCache(k, norm);
             }
           });
@@ -935,7 +941,7 @@ const Translator = (() => {
               results[item.index] = norm;
 
               if (item.raw && item.raw.trim()) {
-                const k = `${srcLang}:${tgtLang}:${item.raw.trim()}`;
+                const k = makeTranslationCacheKey(srcLang, tgtLang, item.raw, useKurdishDigits);
                 setTranslationCache(k, norm);
               }
             } catch {
@@ -961,7 +967,7 @@ const Translator = (() => {
             results[item.index] = norm;
 
             if (item.raw && item.raw.trim()) {
-              const k = `${srcLang}:${tgtLang}:${item.raw.trim()}`;
+              const k = makeTranslationCacheKey(srcLang, tgtLang, item.raw, useKurdishDigits);
               setTranslationCache(k, norm);
             }
           } catch {

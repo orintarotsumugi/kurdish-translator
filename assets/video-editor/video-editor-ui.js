@@ -512,7 +512,7 @@
         <span class="vn-btn-emoji"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
         <span id="studioSubsBadge">Apply Kurdish Subs</span>
       </button>
-      <input type="file" id="studioSubFileInput" accept=".srt,.vtt,.ass,.ssa,.sub,.smi" hidden />
+      <input type="file" id="studioSubFileInput" accept=".srt,.vtt,.ass,.ssa,.sub,.smi,.sbv,.lrc,.txt" hidden />
       <button type="button" class="vn-icon-btn" id="studioImportSubBtn" title="Import subtitle file (.srt, .vtt, .ass)" aria-label="Import subtitle file">
         <span class="vn-btn-emoji"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span>
       </button>
@@ -541,7 +541,7 @@
               <span>Try Sample Video</span>
             </button>
           </div>
-          <input type="file" id="studioVideoFileInput" accept="video/mp4,video/quicktime,video/webm,.mov,.mp4,.webm" hidden />
+          <input type="file" id="studioVideoFileInput" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,video/x-msvideo,.mov,.mp4,.webm,.mkv,.avi,.m4v" hidden />
         </div>
       </div>
       <div class="vn-subtitle-overlay pos-bottom hidden" id="studioSubtitleOverlay" tabindex="0" role="button" aria-label="Subtitle overlay, drag to move or click to edit">

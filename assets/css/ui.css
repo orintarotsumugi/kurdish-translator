@@ -1,0 +1,782 @@
+/* ============================================================
+   Kurdî Subtitle Translator — Modern UI & Mobile Layer
+   Loaded after the component stylesheets. Rounds the hardest
+   edges, gives the app a real mobile navigation bar, fixes
+   small-screen overflow and enlarges touch targets without
+   changing the desktop information architecture.
+   ============================================================ */
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ---------- Desktop polish ---------- */
+
+.topbar {
+  padding: calc(18px + var(--safe-top)) 0 14px;
+  gap: 10px;
+}
+
+.brand {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.brand-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brand-text h1 {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-text p {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card {
+  border-radius: var(--md-shape-corner-extra-large);
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9), var(--md-elevation-1);
+}
+
+.tabs {
+  gap: 6px;
+  padding: 8px 0 16px;
+  border-bottom: 1px solid transparent;
+}
+
+.tab {
+  height: 48px;
+  border-radius: var(--md-shape-corner-medium);
+  font-size: 13px;
+  letter-spacing: 0.1px;
+}
+
+.tab .tab-ic svg {
+  width: 19px;
+  height: 19px;
+}
+
+.tab.active {
+  color: #f3ecff;
+  background: linear-gradient(135deg, rgba(208, 188, 255, 0.24), rgba(139, 154, 255, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(208, 188, 255, 0.28), 0 6px 18px -10px rgba(208, 188, 255, 0.8);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #d8c7ff 0%, #b9a6f7 100%);
+  border-radius: var(--md-shape-corner-medium);
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #e6dbff 0%, #c9b8ff 100%);
+}
+
+.btn-secondary,
+.btn-tertiary,
+.btn-ghost {
+  border-radius: var(--md-shape-corner-medium);
+}
+
+.player-card,
+.editor-card {
+  border-radius: var(--md-shape-corner-large);
+}
+
+.player {
+  border-radius: var(--md-shape-corner-large);
+}
+
+.switch .slider {
+  border-radius: var(--md-shape-corner-full);
+}
+
+.switch .slider::before {
+  border-radius: 50%;
+}
+
+/* The editor list is the scroll container for cue rows; without a
+   positioning context every row's offsetParent is the card instead,
+   which broke the "follow the playing cue" scroll maths. */
+.editor-list {
+  position: relative;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ed-row:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 1px var(--md-sys-color-primary);
+}
+
+/* The player screen owns horizontal gestures; keep vertical page scroll. */
+.screen {
+  touch-action: pan-y;
+}
+
+.timeline {
+  height: 30px;
+}
+
+.tl-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+}
+
+.quality-texts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.quality-score-ring {
+  border-radius: 50%;
+}
+
+.quality-stat-item {
+  border-radius: var(--md-shape-corner-medium);
+}
+
+.quality-badge,
+.quality-issue-tag {
+  border-radius: var(--md-shape-corner-full);
+}
+
+.quality-issue-card {
+  border-radius: var(--md-shape-corner-medium);
+}
+
+.quality-issue-card .quick-fix-row-btn,
+.quality-issue-card .goto-cue-btn {
+  border-radius: var(--md-shape-corner-small);
+}
+
+.update-action-btn,
+.update-close-btn {
+  border-radius: var(--md-shape-corner-medium);
+}
+
+.tour-card {
+  border-radius: var(--md-shape-corner-large);
+}
+
+.tour-icon-badge {
+  border-radius: var(--md-shape-corner-medium);
+}
+
+/* ---------- Phones and small tablets ---------- */
+
+@media (max-width: 720px) {
+  .app {
+    padding-left: calc(12px + var(--safe-left));
+    padding-right: calc(12px + var(--safe-right));
+    padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 24px);
+  }
+
+  .topbar {
+    padding: calc(12px + var(--safe-top)) 2px 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-text h1 {
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .brand-text p {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .topbar-actions .gh-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    font-size: 0;
+    line-height: 0;
+  }
+
+  .topbar-actions .gh-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lang-switch-btn {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  /* Bottom navigation: always reachable with one thumb. */
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 900;
+    width: 100%;
+    margin: 0;
+    padding: 7px calc(10px + var(--safe-right)) calc(7px + var(--safe-bottom)) calc(10px + var(--safe-left));
+    background: rgba(20, 18, 24, 0.97);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.5);
+    gap: 6px;
+  }
+
+  .tab {
+    position: relative;
+    flex-direction: column;
+    gap: 3px;
+    height: 54px;
+    padding: 6px 2px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border: 0;
+    background: transparent;
+    border-radius: 12px;
+  }
+
+  .tab .tab-ic svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .tab:hover {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .tab.active {
+    border: 0;
+    background: rgba(208, 188, 255, 0.14);
+    box-shadow: none;
+    color: #f0e8ff;
+  }
+
+  .tab.active::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    width: 22px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--md-sys-color-primary);
+    transform: translateX(-50%);
+  }
+
+  .tab.disabled {
+    opacity: 0.38;
+  }
+
+  .stage {
+    gap: 14px;
+    padding-bottom: 8px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .dropzone {
+    padding: 26px 14px;
+  }
+
+  .dz-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 10px;
+  }
+
+  .dz-hint {
+    font-size: 11.5px;
+  }
+
+  /* Comfortable, non-zooming form controls (iOS zooms below 16px). */
+  input,
+  select,
+  textarea,
+  .ed-input,
+  .ed-search-input,
+  .quality-search-input,
+  #fsInput,
+  #qualitySearchInput {
+    font-size: 16px !important;
+  }
+
+  .ed-search-wrap,
+  .ed-search-input {
+    height: 42px;
+  }
+
+  .ed-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ed-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ed-header-actions > * {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .ed-subtoolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ed-tool-group,
+  .ed-switch-group {
+    justify-content: space-between;
+  }
+
+  .ed-switch-group {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .ed-switch-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .switch-chip {
+    flex: 0 0 auto;
+  }
+
+  .ed-detection-bar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ed-filter-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .ed-filter-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ed-filter-chip {
+    flex: 0 0 auto;
+    min-height: 34px;
+  }
+
+  .ed-summary-strip {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .editor-list {
+    max-height: min(62dvh, 520px);
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .ed-row {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .ed-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    flex-basis: auto;
+  }
+
+  .ed-time {
+    flex-direction: row;
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .ed-time-sep {
+    display: inline-flex;
+  }
+
+  .ed-cue-toolbar {
+    gap: 6px;
+  }
+
+  .ed-cue-actions {
+    margin-left: auto;
+  }
+
+  .ed-row-action-btn {
+    min-height: 32px;
+    padding: 5px 9px;
+    font-size: 10.5px;
+  }
+
+  .editor-hint {
+    display: none;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .ctl-primary-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 3px;
+  }
+
+  .ctrl-btn {
+    width: 40px;
+    height: 42px;
+  }
+
+  .ctrl-btn.ctl-mini {
+    width: 36px;
+    height: 42px;
+  }
+
+  .ctrl-btn.play-master {
+    width: 52px;
+    height: 44px;
+  }
+
+  .ctrl-meta-group {
+    width: 100%;
+  }
+
+  .ctl-secondary-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 5px;
+  }
+
+  .ctl-secondary-group .ctl-select {
+    flex: 1;
+  }
+
+  .ctl-secondary-group .ctl-select select {
+    width: 100%;
+    height: 40px;
+  }
+
+  .ctrl-btn.fs-launch-btn {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .screen {
+    padding: 4% 5%;
+  }
+
+  .screen-text {
+    max-width: 96%;
+  }
+
+  .player-note {
+    display: none;
+  }
+
+  .timeline-container {
+    padding: 8px 12px 2px;
+  }
+
+  .live-screen {
+    min-height: 168px;
+  }
+
+  .live-feed {
+    max-height: 148px;
+  }
+
+  .done-card {
+    padding: 22px 14px;
+  }
+
+  .done-actions {
+    gap: 8px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-tertiary {
+    min-height: 48px;
+  }
+
+  .export-format-box {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    gap: 8px;
+  }
+
+  [dir="rtl"] .export-format-box {
+    text-align: right;
+  }
+
+  .export-format-box .select-wrap {
+    width: 100%;
+  }
+
+  /* Modals become bottom sheets instead of floating boxes. */
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    animation: mobileSheetIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes mobileSheetIn {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-header {
+    padding: 14px 14px 12px;
+  }
+
+  .modal-body {
+    max-height: none;
+    padding: 12px 14px;
+  }
+
+  .modal-footer {
+    padding: 10px 14px calc(12px + var(--safe-bottom));
+  }
+
+  .quality-modal-card {
+    width: 100%;
+    height: 92dvh;
+    max-height: 92dvh;
+  }
+
+  .quality-modal-body {
+    padding: 10px 12px;
+  }
+
+  .quality-issues-list {
+    max-height: none;
+  }
+
+  .quality-filter-bar {
+    gap: 8px;
+  }
+
+  .quality-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .quality-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .quality-tab {
+    flex: 0 0 auto;
+    min-height: 34px;
+  }
+
+  .quality-search-wrap {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .quality-texts {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quality-actions-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .quality-summary-card {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .quality-score-ring {
+    width: 62px;
+    height: 62px;
+  }
+
+  .quality-stats {
+    min-width: 0;
+  }
+
+  .switch-chip-inner {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .icon-btn,
+  .ed-save-btn,
+  .ed-download-btn,
+  .icon-btn-action,
+  .modal-close-btn,
+  .refresh-pill-btn {
+    min-height: 40px;
+  }
+
+  .ed-search-nav-btn,
+  .ed-search-clear {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Toasts sit above the bottom navigation. */
+  .toast-container {
+    bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px) !important;
+  }
+
+  body.studio-mode .toast-container,
+  body.studio-mode #toastContainer {
+    top: calc(14px + var(--safe-top)) !important;
+    bottom: auto !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-text h1 {
+    font-size: 13.5px;
+  }
+
+  .logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .lang-switch-btn {
+    padding: 0 8px;
+  }
+
+  .lang-switch-btn .lang-sep {
+    opacity: 0.25;
+  }
+
+  .tab {
+    font-size: 9.5px;
+    height: 52px;
+  }
+
+  .tab .tab-ic svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand-text h1 {
+    font-size: 12.5px;
+  }
+
+  .topbar-actions .gh-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .lang-switch-btn {
+    height: 34px;
+    font-size: 10.5px;
+  }
+
+  .tab {
+    font-size: 9px;
+  }
+}
+
+/* Landscape phones: keep the navigation, reclaim vertical space. */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 900px) {
+  .app {
+    padding-bottom: calc(58px + var(--safe-bottom));
+  }
+
+  .tabs {
+    padding-top: 3px;
+    padding-bottom: calc(3px + var(--safe-bottom));
+  }
+
+  .tab {
+    flex-direction: row;
+    gap: 6px;
+    height: 42px;
+    font-size: 11px;
+  }
+
+  .tab.active::before {
+    display: none;
+  }
+
+  :root {
+    --nav-height: 52px;
+  }
+}

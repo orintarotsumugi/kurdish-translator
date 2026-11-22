@@ -291,16 +291,29 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  const rootDir = path.resolve(__dirname);
   const safePath = path.normalize(decodedPath).replace(/^(\.\.[\/\\])+/, '');
-  let resolvedPath = path.resolve(__dirname, '.' + safePath);
-  if (!resolvedPath.startsWith(path.resolve(__dirname))) {
-    resolvedPath = path.join(__dirname, 'index.html');
+  let resolvedPath = path.resolve(rootDir, '.' + safePath);
+  // startsWith alone also accepts a sibling directory whose name begins with
+  // the root name (e.g. /app-evil for /app), so require the separator.
+  if (resolvedPath !== rootDir && !resolvedPath.startsWith(rootDir + path.sep)) {
+    resolvedPath = path.join(rootDir, 'index.html');
   }
   let filePath = resolvedPath;
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      filePath = path.join(__dirname, 'index.html');
+      // A missing asset with an extension is a 404, not the HTML shell: serving
+      // index.html as .js/.png made browsers parse markup as code.
+      if (err && path.extname(decodedPath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('404 Not Found');
+        return;
+      }
+      // Fall back to the SPA shell and drop the directory's stat, otherwise
+      // Content-Length and Range were derived from the directory itself.
+      filePath = path.join(rootDir, 'index.html');
+      stats = null;
     }
 
     const ext = path.extname(filePath).toLowerCase();

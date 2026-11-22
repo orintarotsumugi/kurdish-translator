@@ -381,8 +381,9 @@ const AppTour = (() => {
 
     const dots = document.querySelectorAll('.tour-dot');
     dots.forEach((dot) => {
-      dot.addEventListener('click', (e) => {
-        const idx = parseInt(e.target.dataset.stepIndex, 10);
+      // The markup uses data-step; reading data-step-index made every dot a no-op.
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.step, 10);
         if (!isNaN(idx)) renderTourStep(idx);
       });
     });

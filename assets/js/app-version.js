@@ -3,7 +3,7 @@
  * Exposes AppVersion as a global module.
  */
 const AppVersion = (() => {
-  const APP_VERSION = 'v177';
+  const APP_VERSION = 'v178';
   const GITHUB_REPO = 'LOST-4EVER/kurdish-translator';
   const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/commits/main`;
   const GITHUB_RELEASES_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
@@ -20,6 +20,7 @@ const AppVersion = (() => {
   let timeTickerInterval = null;
   let latestGitHubMeta = null;
   let currentServiceWorkerReg = null;
+  let lastLatencyCheck = 0;
 
   /**
    * Parses version string into numeric parts array.
@@ -119,14 +120,15 @@ const AppVersion = (() => {
 
   function formatRelativeTime(timestamp) {
     const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+    const withCount = (key, fallback, count) => getI18nText(key, fallback).replace('{n}', String(count));
     if (elapsedSeconds < 15) return getI18nText('timeJustNow', 'Just now');
-    if (elapsedSeconds < 60) return `${elapsedSeconds}s ago`;
+    if (elapsedSeconds < 60) return withCount('timeSecondsAgo', '{n}s ago', elapsedSeconds);
     const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-    if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+    if (elapsedMinutes < 60) return withCount('timeMinutesAgo', '{n}m ago', elapsedMinutes);
     const elapsedHours = Math.floor(elapsedMinutes / 60);
-    if (elapsedHours < 24) return `${elapsedHours}h ago`;
+    if (elapsedHours < 24) return withCount('timeHoursAgo', '{n}h ago', elapsedHours);
     const elapsedDays = Math.floor(elapsedHours / 24);
-    return `${elapsedDays}d ago`;
+    return withCount('timeDaysAgo', '{n}d ago', elapsedDays);
   }
 
   let deferredInstallPrompt = null;
@@ -425,6 +427,11 @@ const AppVersion = (() => {
       return;
     }
 
+    // Opening the refresh menu repeatedly used to ping Google every time.
+    const now = Date.now();
+    if (now - lastLatencyCheck < 60000) return;
+    lastLatencyCheck = now;
+
     const startTime = performance.now();
     try {
       const pingUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ckb&dt=t&q=hi&_p=${Date.now()}`;
@@ -467,6 +474,7 @@ const AppVersion = (() => {
   async function checkForAppUpdates(manual = false) {
     if (isCheckingUpdates) return;
     isCheckingUpdates = true;
+    try {
 
     const els = getElements();
     if (manual) {
@@ -509,7 +517,6 @@ const AppVersion = (() => {
             if (manual && typeof Toast !== 'undefined') {
               Toast.show(getI18nText('newVersionAvailable', 'New version available!'), 'success', 4000);
             }
-            isCheckingUpdates = false;
             return;
           }
         }
@@ -536,7 +543,10 @@ const AppVersion = (() => {
     }
 
     updateUIState();
-    isCheckingUpdates = false;
+    } finally {
+      // A failed tier must never leave the refresh button permanently locked.
+      isCheckingUpdates = false;
+    }
   }
 
   /**

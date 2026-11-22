@@ -22,6 +22,9 @@ const SubtitlePlayer = (() => {
   let lastSec = -1;     // last whole second written to the time readout
   let lastPct = -1;     // last timeline progress percentage written to style
   let cursor = -1;      // cached cue index from the last cueAt() lookup
+  let lastPrimaryIdx = -1; // index of the earliest active cue
+  let maxCueDuration = 0;  // longest cue, used to bound overlap scans
+  let suppressScreenClickUntil = 0;
   let fontScale = 1;    // font scale multiplier
   let currentAspectRatio = '16:9';
   let showOrig = false;
@@ -215,6 +218,9 @@ const SubtitlePlayer = (() => {
     el.screen.addEventListener('click', (e) => {
       // Ignore clicks on buttons, inputs or links
       if (e.target.closest('button, select, input, textarea, a')) return;
+      // A horizontal scrub ends with a synthesized click; don't let that
+      // toggle playback and undo the seek the user just made.
+      if (performance.now() < suppressScreenClickUntil) return;
 
       const rect = el.screen.getBoundingClientRect();
       if (!rect.width) return;
@@ -284,6 +290,7 @@ const SubtitlePlayer = (() => {
       }
 
       if (isScreenScrubbing) {
+        suppressScreenClickUntil = performance.now() + 450;
         const rect = el.screen.getBoundingClientRect();
         const scrubSpanSec = Math.min(90, Math.max(15, total / 1000));
         const deltaSec = (dx / (rect.width || 400)) * scrubSpanSec;
@@ -296,6 +303,7 @@ const SubtitlePlayer = (() => {
     const endScreenTouch = () => {
       if (isScreenScrubbing) {
         isScreenScrubbing = false;
+        suppressScreenClickUntil = performance.now() + 450;
         hideScreenScrubHud();
       }
     };
@@ -330,9 +338,11 @@ const SubtitlePlayer = (() => {
     stop();
     cues = newCues || [];
     cursor = -1;
+    lastPrimaryIdx = -1;
     lastSec = -1; // a new file must rewrite the time readout even at 0:00
     lastPct = -1;
     total = cues.reduce((max, c) => Math.max(max, c.end), 0);
+    maxCueDuration = cues.reduce((max, c) => Math.max(max, (c.end || 0) - (c.start || 0)), 0);
     buildTimeline();
     pos = 0;
     activeCue = undefined;
@@ -344,12 +354,39 @@ const SubtitlePlayer = (() => {
     el.tlCues.innerHTML = '';
     if (!total) return;
     const frag = document.createDocumentFragment();
-    for (const c of cues) {
-      const seg = document.createElement('div');
-      seg.className = 'tl-seg';
-      seg.style.left = `${(c.start / total) * 100}%`;
-      seg.style.width = `${Math.max(0.5, ((c.end - c.start) / total) * 100)}%`;
-      frag.appendChild(seg);
+
+    // A div per cue is fine for a film, but a 5,000-line transcript would
+    // create 5,000 nodes on every load. Above the cap, rasterize presence
+    // into fixed buckets and draw one node per run instead.
+    const MAX_SEGMENTS = 400;
+    if (cues.length > MAX_SEGMENTS) {
+      const buckets = new Uint8Array(MAX_SEGMENTS);
+      for (const c of cues) {
+        const start = clamp(Math.floor((c.start / total) * MAX_SEGMENTS), 0, MAX_SEGMENTS - 1);
+        const end = clamp(Math.floor(((c.end - 1) / total) * MAX_SEGMENTS), start, MAX_SEGMENTS - 1);
+        buckets.fill(1, start, end + 1);
+      }
+      let runStart = -1;
+      for (let i = 0; i <= MAX_SEGMENTS; i++) {
+        const on = i < MAX_SEGMENTS && buckets[i] === 1;
+        if (on && runStart === -1) runStart = i;
+        else if (!on && runStart !== -1) {
+          const seg = document.createElement('div');
+          seg.className = 'tl-seg';
+          seg.style.left = `${(runStart / MAX_SEGMENTS) * 100}%`;
+          seg.style.width = `${((i - runStart) / MAX_SEGMENTS) * 100}%`;
+          frag.appendChild(seg);
+          runStart = -1;
+        }
+      }
+    } else {
+      for (const c of cues) {
+        const seg = document.createElement('div');
+        seg.className = 'tl-seg';
+        seg.style.left = `${(c.start / total) * 100}%`;
+        seg.style.width = `${Math.max(0.5, ((c.end - c.start) / total) * 100)}%`;
+        frag.appendChild(seg);
+      }
     }
     el.tlCues.appendChild(frag);
   }
@@ -433,18 +470,22 @@ const SubtitlePlayer = (() => {
         hi = mid - 1;
       }
     }
-    if (last < 0) return [];
+    if (last < 0) { lastPrimaryIdx = -1; return []; }
     const active = [];
-    // Scan backwards from `last` to find all cues that haven't ended yet
+    let primaryIdx = -1;
+    // Scan backwards from `last` to find all cues that haven't ended yet.
+    // Bound the scan by the longest cue in the file instead of assuming no
+    // subtitle lasts more than two minutes (long narration cues were lost).
     for (let i = last; i >= 0; i--) {
       const c = cues[i];
       if (pos >= c.start && pos < c.end) {
         active.unshift(c);
-      } else if (pos - c.start > 120000) {
-        // Cues are sorted by start time; subtitles rarely exceed 2 minutes
+        primaryIdx = i;
+      } else if (pos - c.start > maxCueDuration) {
         break;
       }
     }
+    lastPrimaryIdx = primaryIdx;
     return active;
   }
 
@@ -681,7 +722,9 @@ const SubtitlePlayer = (() => {
   function refresh(force = false) {
     const activeList = cuesAt(pos);
     const primaryCue = activeList[0] || null;
-    const primaryIdx = primaryCue ? cues.indexOf(primaryCue) : -1;
+    const primaryIdx = primaryCue
+      ? (cues[lastPrimaryIdx] === primaryCue ? lastPrimaryIdx : cues.indexOf(primaryCue))
+      : -1;
     const cuesKey = activeList.map((c) => `${c.index}:${c.text}`).join('|');
     const changed = cuesKey !== activeCuesKey;
 
