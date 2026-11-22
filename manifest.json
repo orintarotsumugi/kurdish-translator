@@ -31,6 +31,8 @@
             ".ssa",
             ".smi",
             ".sub",
+            ".sbv",
+            ".lrc",
             ".txt",
             "text/plain",
             "text/vtt",
@@ -46,7 +48,7 @@
       "action": "./",
       "name": "Subtitle File",
       "accept": {
-        "text/plain": [".srt", ".vtt", ".ass", ".ssa", ".smi", ".sub", ".txt"],
+        "text/plain": [".srt", ".vtt", ".ass", ".ssa", ".smi", ".sub", ".sbv", ".lrc", ".txt"],
         "application/x-subrip": [".srt"],
         "text/vtt": [".vtt"],
         "application/x-ass": [".ass", ".ssa"]

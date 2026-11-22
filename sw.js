@@ -6,7 +6,7 @@
  * (Google's endpoint), so offline mode lets you load files and use the
  * preview player, but translating requires a connection.
  */
-const CACHE = 'kurdish-translator-v176';
+const CACHE = 'kurdish-translator-v177';
 const SHARED_CACHE = 'kurdish-shared-file';
 
 const CRITICAL_ASSETS = new Set([
@@ -158,7 +158,9 @@ self.addEventListener('fetch', (event) => {
         } catch (err) {
           console.error('Share target handling error:', err);
         }
-        return Response.redirect('./?shared=1', 303);
+        // Response.redirect() requires an absolute URL; a relative one throws
+        // and breaks the whole Web Share Target POST.
+        return Response.redirect(new URL('./?shared=1', self.location).href, 303);
       })()
     );
     return;

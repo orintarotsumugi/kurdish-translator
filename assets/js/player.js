@@ -107,6 +107,12 @@ const SubtitlePlayer = (() => {
     document.addEventListener('keydown', (e) => {
       const t = e.target;
       if (t && t.closest && t.closest('select, input, button, textarea, a')) return;
+      // Fullscreen installs its own shortcuts. Handling them here as well made
+      // Space toggle twice (appearing broken) and arrow keys jump 10s instead of 5s.
+      if (typeof AppFullscreen !== 'undefined' && AppFullscreen.isActive && AppFullscreen.isActive()) return;
+      if (typeof VideoStudio !== 'undefined' && VideoStudio.isStudioActive) return;
+      // Never hijack Space/arrows while the preview tab is off screen.
+      if (!el.screen || el.screen.offsetParent === null) return;
       switch (e.code) {
         case 'Space': e.preventDefault(); toggle(); break;
         case 'ArrowRight': e.preventDefault(); seek(pos + 5000); break;
@@ -235,8 +241,8 @@ const SubtitlePlayer = (() => {
           jump(5000);
           showScreenRipple('forward', clientX, clientY, '+5s');
         } else {
-          if (typeof AppFullscreen !== 'undefined' && AppFullscreen.enterFs) {
-            AppFullscreen.enterFs();
+          if (typeof AppFullscreen !== 'undefined' && typeof AppFullscreen.enter === 'function') {
+            AppFullscreen.enter();
             showScreenRipple('fullscreen', clientX, clientY);
           } else {
             toggle();
@@ -247,11 +253,13 @@ const SubtitlePlayer = (() => {
         lastScreenTapTime = now;
         lastScreenTapPos = { x: clientX, y: clientY };
         if (screenTapTimer) clearTimeout(screenTapTimer);
+        // Must outlast the 320ms double-tap window, otherwise the first tap of a
+        // double-tap fires play/pause before the gesture is recognised.
         screenTapTimer = setTimeout(() => {
           screenTapTimer = null;
           toggle();
           showScreenRipple(playing ? 'play' : 'pause', clientX, clientY);
-        }, 230);
+        }, 330);
       }
     });
 
@@ -715,6 +723,10 @@ const SubtitlePlayer = (() => {
       lastPct = roundedPct;
       if (el.tlFill) el.tlFill.style.width = `${roundedPct}%`;
       if (el.tlThumb) el.tlThumb.style.left = `${roundedPct}%`;
+      if (el.tl) {
+        el.tl.setAttribute('aria-valuenow', String(Math.round(roundedPct)));
+        el.tl.setAttribute('aria-valuetext', `${fmt(pos)} / ${fmt(total)}`);
+      }
     }
 
     if (changed && onCue) onCue(primaryCue, primaryIdx, activeList);

@@ -12,6 +12,8 @@ const Toast = (() => {
         containerEl = document.createElement('div');
         containerEl.id = 'toastContainer';
         containerEl.className = 'toast-container';
+        containerEl.setAttribute('role', 'status');
+        containerEl.setAttribute('aria-live', 'polite');
         document.body.appendChild(containerEl);
       }
     }

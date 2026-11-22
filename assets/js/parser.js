@@ -119,6 +119,10 @@ const SubParser = (() => {
     if (TIMECODE.test(t)) return 'srt';
     if (SBV_TIMECODE.test(t)) return 'sbv';
     if (LRC_LINE.test(t)) return 'lrc';
+    // No timing markers at all means a plain transcript. Falling through to SRT
+    // used to yield zero cues for .txt files. Section headers mean this is an
+    // unrecognised subtitle format rather than prose, so keep it unknown.
+    if (!/^\s*\[[^\]]+\]\s*$/m.test(t)) return 'txt';
     return 'unknown';
   }
 
@@ -148,7 +152,9 @@ const SubParser = (() => {
         lastWasBlank = false;
         continue;
       }
-      if (/^(?:NOTE|STYLE|REGION)\b/i.test(line)) { inHeaderBlock = true; continue; }
+      // Only at the start of a block: a subtitle line that literally begins with
+      // "NOTE" / "STYLE" must stay cue text, not open a comment block.
+      if (lastWasBlank && /^(?:NOTE|STYLE|REGION)\b/i.test(line)) { inHeaderBlock = true; continue; }
       if (!line) {
         lastWasBlank = true;
         continue;
@@ -1090,7 +1096,13 @@ Style: Top,Noto Naskh Arabic,44,16777215,65535,0,0,-1,0,1,3.2,1.8,8,40,40,35,0,1
           val[styleKey] = 'Top';
         }
       }
-      val[keyOf('text')] = normalizeTextForASS(c.text, c.settings, c.rawText || c.rawAssText || '', c);
+      // The parser lifts {\pos(x,y)} into cue.pos; re-emit it so an ASS → ASS
+      // round trip keeps the original on-screen position.
+      let dialogueText = normalizeTextForASS(c.text, c.settings, c.rawText || c.rawAssText || '', c);
+      if (c.pos && !/\\pos\(/i.test(dialogueText)) {
+        dialogueText = `{\\pos(${Math.round(c.pos.x)},${Math.round(c.pos.y)})}` + dialogueText;
+      }
+      val[keyOf('text')] = dialogueText;
       lines.push(`Dialogue: ${order.map((f) => val[f]).join(',')}`);
     }
     return lines.join('\n') + '\n';
@@ -1136,7 +1148,7 @@ Style: Top,Noto Naskh Arabic,44,16777215,65535,0,0,-1,0,1,3.2,1.8,8,40,40,35,0,1
     // If format is ASS or SSA, subtitles can naturally layer simultaneously, so skip overlap shifting
     if (options.format === 'ass' || options.format === 'ssa') {
       const res = cues.map((c, i) => ({ ...c, index: i + 1 }));
-      res.fixedCount = 0;
+      Object.defineProperty(res, 'fixedCount', { value: 0, enumerable: false });
       return res;
     }
     const minDur = options.minDuration !== undefined ? options.minDuration : (options.minDurationMs !== undefined ? options.minDurationMs : 600);

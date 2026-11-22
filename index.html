@@ -298,7 +298,7 @@
         <div class="update-text-group">
           <div>
             <strong data-i18n="updateAvailable">A new version is available!</strong>
-            <span class="banner-ver-tag" id="bannerVerTag">v170</span>
+            <span class="banner-ver-tag" id="bannerVerTag">v177</span>
           </div>
           <span data-i18n="updateAvailableSub" id="bannerSubText">Update now to get the latest version and features.</span>
         </div>
@@ -330,8 +330,8 @@
     </div>
 
     <!-- Tab navigation -->
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="translate">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Application sections">
+      <button class="tab active" data-tab="translate" role="tab" aria-selected="true">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -343,7 +343,7 @@
         </span>
         <span data-i18n="tabTranslate">Translate</span>
       </button>
-      <button class="tab" data-tab="preview" id="previewTab">
+      <button class="tab" data-tab="preview" id="previewTab" role="tab" aria-selected="false">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -354,7 +354,7 @@
         </span>
         <span data-i18n="tabPreview">Preview</span>
       </button>
-      <button class="tab" data-tab="video-editor" id="videoEditorTab">
+      <button class="tab" data-tab="video-editor" id="videoEditorTab" role="tab" aria-selected="false">
         <span class="tab-ic">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
@@ -378,13 +378,13 @@
         <!-- STEP 1 : upload -->
         <section class="card upload-card" id="stepUpload">
           <div class="dropzone" id="dropzone" tabindex="0" role="button">
-            <input type="file" id="fileInput" accept=".srt,.vtt,.ass,.ssa,.sub,.smi,.txt,text/plain" hidden />
+            <input type="file" id="fileInput" accept=".srt,.vtt,.ass,.ssa,.sub,.smi,.sbv,.lrc,.txt,text/plain" hidden />
             <div class="dz-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm0 12H4V8h16v10zM8 13.01l1.41 1.41L11 12.84V17h2v-4.16l1.59 1.59L16 13.01 12 9l-4 4.01z"/></svg>
             </div>
             <h2 data-i18n="dropTitle">Drop your translate file</h2>
             <p class="dz-sub"><span data-i18n="dropSubPrefix">or </span><span class="link" data-i18n="dropBrowse">browse from device</span><span data-i18n="dropSubSuffix"> — it translates privately in your browser</span></p>
-            <div class="dz-hint">Supports <b>.SRT</b> <b>.VTT</b> <b>.ASS</b> <b>.SSA</b> <b>.SUB</b> <b>.SMI</b> — Android &amp; iOS ready</div>
+            <div class="dz-hint">Supports <b>.SRT</b> <b>.VTT</b> <b>.ASS</b> <b>.SSA</b> <b>.SUB</b> <b>.SMI</b> <b>.SBV</b> <b>.LRC</b> <b>.TXT</b> — Android &amp; iOS ready</div>
             <div class="pill-row">
               <span class="pill" data-i18n="pillFree">Free</span>
               <span class="pill" data-i18n="pillNoSignup">No signup</span>
@@ -657,6 +657,8 @@
                 <option value="ass">ASS / SSA</option>
                 <option value="sub">SUB (MicroDVD)</option>
                 <option value="smi">SAMI (.smi)</option>
+                <option value="sbv">SBV (SubViewer)</option>
+                <option value="lrc">LRC (Lyrics)</option>
                 <option value="txt">TXT (Transcript)</option>
               </select>
             </div>
@@ -978,7 +980,7 @@
             <div class="refresh-menu-header">
               <div class="header-status-badge">
                 <span class="live-dot online" id="refreshLiveDot" title="Network status"></span>
-                <span class="menu-ver-tag" id="currentVerTag">v176</span>
+                <span class="menu-ver-tag" id="currentVerTag">v177</span>
               </div>
               <div class="header-status-meta">
                 <span class="menu-status-txt" id="refreshStatusTxt" data-i18n="appUpToDate">App up to date</span>
@@ -1049,13 +1051,13 @@
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
                 <div class="item-text">
-                  <strong data-i18n="whatsNew">What's New in v170</strong>
+                  <strong data-i18n="whatsNew">What's New</strong>
                   <span data-i18n="whatsNewSub">View latest improvements</span>
                 </div>
               </button>
               <div class="changelog-panel hidden" id="changelogPanel">
                 <div class="changelog-badge-row">
-                  <span class="changelog-ver">Release v170</span>
+                  <span class="changelog-ver">Release v177</span>
                   <span class="changelog-date">2026</span>
                 </div>
                 <ul class="changelog-list">
@@ -1082,7 +1084,7 @@
     </footer>
   </div>
 
-  <div class="toast-container" id="toastContainer"></div>
+  <div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
   <div class="toast" id="toast" role="status"></div>
 
   <!-- Fullscreen Cinema Theater Overlay -->

@@ -662,7 +662,7 @@ const Translator = (() => {
     if (tgtLang !== 'ckb' || (srcLang !== 'en' && srcLang !== 'en-GB' && srcLang !== 'auto')) return text;
     if (!text) return text;
 
-    const memoKey = srcLang + ' ' + text;
+    const memoKey = srcLang + '\u0000' + text;
     const memoized = PREPROCESS_MEMO.get(memoKey);
     if (memoized !== undefined) return memoized;
 
@@ -726,6 +726,9 @@ const Translator = (() => {
 
   function lookupLexicon(rawText) {
     if (!rawText || typeof rawText !== 'string') return null;
+    // A lexicon hit replaces the entire line, which would silently drop
+    // subtitle markup ({\an8}, <i>, <font>) that the engine path protects.
+    if (/<[^>]+>|\{[^}]*\}/.test(rawText)) return null;
     const dict = getDict();
     if (!dict || !dict.LEXICON) return null;
 
@@ -1043,7 +1046,9 @@ const Translator = (() => {
     lines.forEach((text, index) => {
       if (!text || !String(text).trim()) return;
       if (results && results[index]) return; // Skip lines already matched by exact lexicon
-      if (current.length >= BATCH_LINES || chars + text.length > MAX_CHARS_PER_REQUEST) {
+      // Guard on current.length: a single line longer than the request cap used
+      // to flush an empty batch, costing a pointless request.
+      if (current.length && (current.length >= BATCH_LINES || chars + text.length > MAX_CHARS_PER_REQUEST)) {
         batches.push(current);
         current = [];
         chars = 0;

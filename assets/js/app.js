@@ -8,9 +8,9 @@
   // ---------- Constants ----------
   const STEPS = ['upload', 'settings', 'progress', 'done'];
 
-  const ALLOWED_EXT = ['srt', 'vtt', 'ass', 'ssa', 'sub', 'smi', 'txt'];
-  const LABEL = { srt: 'SRT', vtt: 'VTT', ass: 'ASS', ssa: 'SSA', sub: 'MicroDVD', smi: 'SAMI', txt: 'TXT' };
-  const EXT_BY_FORMAT = { srt: 'srt', vtt: 'vtt', ass: 'ass', ssa: 'ssa', sub: 'sub', smi: 'smi', txt: 'txt' };
+  const ALLOWED_EXT = ['srt', 'vtt', 'ass', 'ssa', 'sub', 'smi', 'sbv', 'lrc', 'txt'];
+  const LABEL = { srt: 'SRT', vtt: 'VTT', ass: 'ASS', ssa: 'SSA', sub: 'MicroDVD', smi: 'SAMI', sbv: 'SBV', lrc: 'LRC', txt: 'TXT' };
+  const EXT_BY_FORMAT = { srt: 'srt', vtt: 'vtt', ass: 'ass', ssa: 'ssa', sub: 'sub', smi: 'smi', sbv: 'sbv', lrc: 'lrc', txt: 'txt' };
   // Per-format MIME so browsers that ignore the `download` attribute fall
   // back to the right extension instead of .txt (text/plain).
   const MIME_BY_FORMAT = {
@@ -20,6 +20,8 @@
     ssa: 'text/x-ssa;charset=utf-8',
     sub: 'application/x-microdvd;charset=utf-8',
     smi: 'application/x-sami;charset=utf-8',
+    sbv: 'text/x-subviewer;charset=utf-8',
+    lrc: 'text/x-lyrics;charset=utf-8',
     txt: 'text/plain;charset=utf-8',
   };
 
@@ -183,6 +185,10 @@
     }
 
     updateTourTriggerBtnState();
+    // data-i18n rewrote #editorStatus with the static "synced" string, and the
+    // editor rows bake their pill labels at build time, so refresh both.
+    updateStatus();
+    if (workCues && workCues.length) buildEditor();
 
     if (typeof AppTour !== 'undefined' && AppTour.refresh) {
       AppTour.refresh();
@@ -848,7 +854,7 @@
 
     const avgCps = (totalCps / workCues.length).toFixed(1);
     const useKurdishDigits = currentUiLang === 'ckb' || (els.kurdishDigitsToggle && els.kurdishDigitsToggle.checked);
-    const fmt = (val) => useKurdishDigits && typeof Translator !== 'undefined' ? Translator.normalizeDigits(String(val)) : String(val);
+    const fmt = (val) => useKurdishDigits && typeof Translator !== 'undefined' ? Translator.normalizeDigits(String(val), true) : String(val);
 
     if (els.edBadgeAll) els.edBadgeAll.textContent = fmt(workCues.length);
     if (els.edBadgeWarnings) els.edBadgeWarnings.textContent = fmt(warningCount);
@@ -892,7 +898,8 @@
     if (!workCues || !workCues.length) {
       const empty = document.createElement('p');
       empty.className = 'ed-empty';
-      empty.textContent = 'Load a subtitle file to edit it here.';
+      const emptyDict = dicts[currentUiLang] || dicts.en;
+      empty.textContent = emptyDict.edEmpty || 'Load a subtitle file to edit it here.';
       list.appendChild(empty);
       if (els.edCount) els.edCount.textContent = '';
       updateDetectionSummary();
@@ -1103,8 +1110,9 @@
 
     const pos = currentPos >= 0 ? currentPos + 1 : 1;
     let label = `${pos} / ${matchCount}`;
-    if (currentUiLang === 'ckb' || (els.kurdishDigitsToggle && els.kurdishDigitsToggle.checked)) {
-      label = Translator.normalizeDigits(label);
+    if ((currentUiLang === 'ckb' || (els.kurdishDigitsToggle && els.kurdishDigitsToggle.checked)) &&
+        typeof Translator !== 'undefined' && Translator.normalizeDigits) {
+      label = Translator.normalizeDigits(label, true);
     }
     badge.textContent = label;
     badge.classList.remove('hidden');
@@ -1396,7 +1404,10 @@
       VideoStudio.exitStudioMode();
     }
     tabButtons.forEach((b) => {
-      if (b && b.classList) b.classList.toggle('active', b.dataset.tab === name);
+      if (!b || !b.classList) return;
+      const isActive = b.dataset.tab === name;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
     if (els.tabTranslate && els.tabTranslate.classList) els.tabTranslate.classList.toggle('hidden', name !== 'translate');
     if (els.tabPreview && els.tabPreview.classList) els.tabPreview.classList.toggle('hidden', name !== 'preview');
@@ -1472,6 +1483,14 @@
 
   async function handleFile(f) {
     if (!f) return;
+    if (f.size === 0) {
+      toast(
+        currentUiLang === 'ckb' ? 'فایلەکە بەتاڵە.' : 'File is empty',
+        true,
+        currentUiLang === 'ckb' ? 'تکایە فایلێکی ژێرنووسی تێدا نووسراو هەڵبژێرە.' : 'Choose a subtitle file that contains text.'
+      );
+      return;
+    }
     if (f.size > 50 * 1024 * 1024) {
       toast(
         currentUiLang === 'ckb' ? 'قەبارەی فایلەکە زۆر گەورەیە.' : 'File too large',
@@ -1485,7 +1504,7 @@
       toast(
         currentUiLang === 'ckb' ? 'فایلەکە پشتیوانی نەکراوە.' : 'Unsupported file format',
         true,
-        currentUiLang === 'ckb' ? 'تکایە فایلی .SRT, .VTT, .ASS, .SSA, .SUB, .SMI یان .TXT هەڵبژێرە.' : 'Use .SRT, .VTT, .ASS, .SSA, .SUB, .SMI or .TXT'
+        currentUiLang === 'ckb' ? 'تکایە فایلی .SRT, .VTT, .ASS, .SSA, .SUB, .SMI, .SBV, .LRC یان .TXT هەڵبژێرە.' : 'Use .SRT, .VTT, .ASS, .SSA, .SUB, .SMI, .SBV, .LRC or .TXT'
       );
       return;
     }
@@ -1495,7 +1514,9 @@
     catch { toast(currentUiLang === 'ckb' ? 'خوێندنەوەی فایلەکە سەرکەوتوو نەبوو.' : 'Failed to read file.', true); return; }
 
     let parsedFile;
-    try { parsedFile = SubParser.parse(text); }
+    // Pass the extension as a hint: plain transcripts and lyric files carry no
+    // timing markers, so content detection alone cannot recognise them.
+    try { parsedFile = SubParser.parse(text, ext); }
     catch { toast(currentUiLang === 'ckb' ? 'هیچ ژێرنووسێک نەدۆزرایەوە.' : 'Could not detect subtitle content.', true); return; }
     if (!parsedFile.cues.length) { toast(currentUiLang === 'ckb' ? 'هیچ دێڕێکی ژێرنووس نییە.' : 'No subtitles found in file.', true); return; }
 
@@ -1630,6 +1651,17 @@
       return finalCues;
     };
 
+    // The optional overlap repair has to run on every path that installs cues
+    // (full success and partial failure), otherwise its toggle silently only
+    // worked for the happy case.
+    const finalizeCues = (cues) => {
+      const fixOverlapChecked = els.fixOverlapToggle ? els.fixOverlapToggle.checked : false;
+      if (fixOverlapChecked && typeof SubParser !== 'undefined' && SubParser.fixOverlaps) {
+        return SubParser.fixOverlaps(cues, { mode: 'trim', minDurationMs: 600, gapMs: 20 });
+      }
+      return cues;
+    };
+
     try {
       const lines = parsed.cues.map(normalize);
       liveSource = lines;
@@ -1669,11 +1701,8 @@
       });
       if (cancelFlag) return; // cancelled mid-run: discard results, stay on settings
 
-      let finalCues = applyTranslation(translated);
-      const fixOverlapChecked = els.fixOverlapToggle ? els.fixOverlapToggle.checked : false;
-      if (fixOverlapChecked && typeof SubParser !== 'undefined' && SubParser.fixOverlaps) {
-        finalCues = SubParser.fixOverlaps(finalCues, { mode: 'trim', minDurationMs: 600, gapMs: 20 });
-      }
+      const finalCues = finalizeCues(applyTranslation(translated));
+      const failedLineCount = Number(translated && translated.failedCount) || 0;
 
       updateCues(finalCues);
       showStep('done');
@@ -1686,12 +1715,23 @@
           () => switchTab('preview')
         );
       }
+
+      if (failedLineCount > 0) {
+        toast(
+          currentUiLang === 'ckb' ? 'بەشێک لە دێڕەکان وەرنەگێڕدران' : 'Some lines were left untranslated',
+          false,
+          currentUiLang === 'ckb'
+            ? `${failedLineCount} دێڕ نەتوانرا وەربگێڕدرێت و وەک خۆی مایەوە.`
+            : `${failedLineCount} line(s) could not be translated and were kept as the original text.`,
+          { type: 'warning' }
+        );
+      }
     } catch (err) {
       if (cancelFlag) return; // aborted by the user, already handled
       console.error(err);
       if (err && err.partial && err.results) {
         // Some lines failed but we have results — show them with a warning.
-        updateCues(applyTranslation(err.results));
+        updateCues(finalizeCues(applyTranslation(err.results)));
         showStep('done');
         toast(
           currentUiLang === 'ckb' ? 'بەشێک لە دێڕەکان وەرنەگێڕدران' : 'Partial translation complete',
@@ -1778,9 +1818,13 @@
 
   function updateAdvBadge() {
     if (!els.advActiveBadge) return;
-    let count = 0;
-    if (els.addBomToggle && els.addBomToggle.checked) count++;
-    if (els.crlfToggle && els.crlfToggle.checked) count++;
+    // Count every non-default option, not just BOM/CRLF: the badge used to read
+    // 0 while accuracy, Kurdish digits or overlap repair were switched on.
+    const optionToggles = [
+      els.includeOriginal, els.accuracyToggle, els.keepOnly,
+      els.kurdishDigitsToggle, els.fixOverlapToggle, els.addBomToggle, els.crlfToggle,
+    ];
+    const count = optionToggles.filter((el) => el && el.checked).length;
     els.advActiveBadge.textContent = String(count);
     if (count > 0) {
       els.advActiveBadge.classList.add('active');
@@ -1880,6 +1924,7 @@
     if (els.fixOverlapToggle) {
       els.fixOverlapToggle.addEventListener('change', () => {
         store.set('fix_overlap', els.fixOverlapToggle.checked ? '1' : '0');
+        updateAdvBadge();
         prepareDownload();
         runQualityInspection();
       });
@@ -2309,7 +2354,7 @@
       showStep('settings');
     });
 
-    els.copyBtn.addEventListener('click', async () => {
+    if (els.copyBtn) els.copyBtn.addEventListener('click', async () => {
       if (!resultText) { toast(currentUiLang === 'ckb' ? 'هیچ دەقێک نییە بۆ کۆپیکردن.' : 'Nothing to copy yet.', true); return; }
       try {
         await navigator.clipboard.writeText(resultText);
@@ -2435,12 +2480,12 @@
     els.previewBtn.addEventListener('click', () => switchTab('preview'));
 
     const launchVideoStudioWithSubs = () => {
-      switchTab('video-editor');
-      if (typeof VideoStudio !== 'undefined' && VideoStudio.enterStudioMode) {
-        VideoStudio.enterStudioMode(currentActiveTab);
-        if (workCues && workCues.length) {
-          VideoStudio.applyCurrentAppSubtitles();
-        }
+      if (typeof VideoStudio === 'undefined') return;
+      // switchTab('video-editor') already enters studio mode; calling
+      // enterStudioMode again re-initialised the whole workstation.
+      if (!VideoStudio.isStudioActive) switchTab('video-editor');
+      if (workCues && workCues.length && typeof VideoStudio.applyCurrentAppSubtitles === 'function') {
+        VideoStudio.applyCurrentAppSubtitles();
       }
     };
 
@@ -2491,13 +2536,6 @@
     if (els.contextAwareToggle) {
       els.contextAwareToggle.addEventListener('change', () => {
         store.set('contextAware', els.contextAwareToggle.checked ? '1' : '0');
-      });
-    }
-
-    if (els.fixOverlapToggle) {
-      els.fixOverlapToggle.addEventListener('change', () => {
-        store.set('fix_overlap', els.fixOverlapToggle.checked ? '1' : '0');
-        prepareDownload();
       });
     }
 
